@@ -593,8 +593,9 @@ const TimelineList = memo(function TimelineList({
   highlightCommentId?: string | null;
   t?: (key: string) => string;
 }) {
+  const translate = t ?? ((key: string) => key);
   if (timeline.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("comments.noTimelineEntries")}</p>;
+    return <p className="text-sm text-muted-foreground">{translate("comments.noTimelineEntries")}</p>;
   }
 
   return (

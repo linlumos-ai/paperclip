@@ -3013,7 +3013,8 @@
     "tabs": {
       "configuration": "配置",
       "runtimeLogs": "运行时日志",
-      "issues": "任务"
+      "issues": "任务",
+      "routines": "定时任务"
     },
     "workspaceSettings": "工作空间设置",
     "workspaceSettingsDescription": "编辑附加到此执行工作空间的具体路径、仓库、分支、配置、拆除和运行时覆盖。",

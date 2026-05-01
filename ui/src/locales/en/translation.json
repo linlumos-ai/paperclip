@@ -3013,7 +3013,8 @@
     "tabs": {
       "configuration": "Configuration",
       "runtimeLogs": "Runtime logs",
-      "issues": "Issues"
+      "issues": "Issues",
+      "routines": "Routines"
     },
     "workspaceSettings": "Workspace settings",
     "workspaceSettingsDescription": "Edit the concrete path, repo, branch, provisioning, teardown, and runtime overrides attached to this execution workspace.",

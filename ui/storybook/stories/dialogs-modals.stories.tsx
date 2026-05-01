@@ -424,7 +424,7 @@ function useIssueCreateErrorMock(enabled: boolean) {
     if (!enabled || typeof window === "undefined") return undefined;
 
     const originalFetch = window.fetch.bind(window);
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const rawUrl =
         typeof input === "string"
           ? input
@@ -439,7 +439,7 @@ function useIssueCreateErrorMock(enabled: boolean) {
         );
       }
       return originalFetch(input, init);
-    };
+    }) as typeof fetch;
 
     return () => {
       window.fetch = originalFetch;

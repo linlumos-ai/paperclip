@@ -814,8 +814,8 @@ function AskUserQuestionsCard({
                   ) : (
                     t("issues.cancelQuestion")
                   )}
-                </Button>
-              ) : null}
+                  </Button>
+                ) : null}
               <Button
                 size="sm"
                 disabled={!onSubmitInteractionAnswers || !canSubmit || working || cancelling}

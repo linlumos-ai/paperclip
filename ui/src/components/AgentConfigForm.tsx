@@ -21,6 +21,7 @@ import {
 } from "@paperclipai/adapter-codex-local";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@paperclipai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@paperclipai/adapter-gemini-local";
+import { DEFAULT_OPENCODE_LOCAL_MODEL } from "@paperclipai/adapter-opencode-local";
 import {
   Popover,
   PopoverContent,
@@ -324,6 +325,17 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
     () => new Set(supportedEnvironmentDriversForAdapter(adapterType)),
     [adapterType],
   );
+  const val = isCreate ? props.values : null;
+  const set = isCreate
+    ? (patch: Partial<CreateConfigValues>) => props.onChange(patch)
+    : null;
+  const currentDefaultEnvironmentId = isCreate
+    ? val!.defaultEnvironmentId ?? ""
+    : eff("identity", "defaultEnvironmentId", props.agent.defaultEnvironmentId ?? "");
+  const currentDefaultEnvironment = useMemo(
+    () => environments.find((environment) => environment.id === currentDefaultEnvironmentId) ?? null,
+    [currentDefaultEnvironmentId, environments],
+  );
   const runnableEnvironments = useMemo(
     () => environments.filter((environment) => {
       if (!supportedEnvironmentDrivers.has(environment.driver)) return false;
@@ -336,14 +348,16 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
 
   // Fetch adapter models for the effective adapter type
   const modelQueryKey = selectedCompanyId
-    ? queryKeys.agents.adapterModels(selectedCompanyId, adapterType)
+    ? queryKeys.agents.adapterModels(selectedCompanyId, adapterType, currentDefaultEnvironmentId || null)
     : ["agents", "none", "adapter-models", adapterType];
   const {
     data: fetchedModels,
     error: fetchedModelsError,
   } = useQuery({
     queryKey: modelQueryKey,
-    queryFn: () => agentsApi.adapterModels(selectedCompanyId!, adapterType),
+    queryFn: () => agentsApi.adapterModels(selectedCompanyId!, adapterType, {
+      environmentId: currentDefaultEnvironmentId || null,
+    }),
     enabled: Boolean(selectedCompanyId),
   });
   const [refreshModelsError, setRefreshModelsError] = useState<string | null>(null);
@@ -364,7 +378,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       }
       return agentsApi.detectModel(selectedCompanyId, adapterType);
     },
-    enabled: Boolean(selectedCompanyId && isLocal),
+    enabled: Boolean(selectedCompanyId && isLocal && adapterType !== "opencode_local"),
   });
   const detectedModel = detectedModelData?.model ?? null;
   const detectedModelCandidates = detectedModelData?.candidates ?? [];
@@ -417,12 +431,6 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
     return typeof value === "string" ? value : "";
   }, [adapterCheapDefault]);
 
-  // Create mode helpers
-  const val = isCreate ? props.values : null;
-  const set = isCreate
-    ? (patch: Partial<CreateConfigValues>) => props.onChange(patch)
-    : null;
-
   function buildAdapterConfigForTest(): Record<string, unknown> {
     if (isCreate) {
       return uiAdapter.buildAdapterConfig(val!);
@@ -448,15 +456,9 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       if (!selectedCompanyId) {
         throw new Error("Select a company to test adapter environment");
       }
-      const selectedEnvironmentId = isCreate
-        ? val!.defaultEnvironmentId ?? null
-        : eff("identity", "defaultEnvironmentId", props.agent.defaultEnvironmentId ?? null);
       return agentsApi.testEnvironment(selectedCompanyId, adapterType, {
         adapterConfig: buildAdapterConfigForTest(),
-        environmentId:
-          typeof selectedEnvironmentId === "string" && selectedEnvironmentId.length > 0
-            ? selectedEnvironmentId
-            : null,
+        environmentId: currentDefaultEnvironmentId || null,
       });
     },
   });
@@ -640,9 +642,6 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       heartbeat: mergedHeartbeat,
     };
   }, [isCreate, overlay.heartbeat, runtimeConfig, val]);
-  const currentDefaultEnvironmentId = isCreate
-    ? val!.defaultEnvironmentId ?? ""
-    : eff("identity", "defaultEnvironmentId", props.agent.defaultEnvironmentId ?? "");
   const effectiveHeartbeat = asObject(effectiveRuntimeConfig.heartbeat);
   const maxTurnContinuation = asObject(effectiveHeartbeat.maxTurnContinuation);
   const maxTurnContinuationEnabled = asBoolean(maxTurnContinuation.enabled, true);
@@ -836,7 +835,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                     } else if (t === "cursor") {
                       nextValues.model = DEFAULT_CURSOR_LOCAL_MODEL;
                     } else if (t === "opencode_local") {
-                      nextValues.model = "";
+                      nextValues.model = DEFAULT_OPENCODE_LOCAL_MODEL;
                     }
                     set!(nextValues);
                   } else {
@@ -852,9 +851,11 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                             ? DEFAULT_CODEX_LOCAL_MODEL
                             : t === "gemini_local"
                               ? DEFAULT_GEMINI_LOCAL_MODEL
+                            : t === "opencode_local"
+                              ? DEFAULT_OPENCODE_LOCAL_MODEL
                             : t === "cursor"
                               ? DEFAULT_CURSOR_LOCAL_MODEL
-                            : "",
+                              : "",
                         effort: "",
                         modelReasoningEffort: "",
                         variant: "",
@@ -977,10 +978,12 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                 creatable
                 detectedModel={detectedModel}
                 detectedModelCandidates={[]}
-                onDetectModel={async () => {
-                  const result = await refetchDetectedModel();
-                  return result.data?.model ?? null;
-                }}
+                onDetectModel={adapterType === "opencode_local"
+                  ? undefined
+                  : async () => {
+                      const result = await refetchDetectedModel();
+                      return result.data?.model ?? null;
+                    }}
                 onRefreshModels={adapterType === "codex_local" ? handleRefreshModels : undefined}
                 refreshingModels={refreshingModels}
                 detectModelLabel={t("agents.config.detectModel")}
@@ -992,6 +995,13 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                     ?? (fetchedModelsError instanceof Error
                       ? fetchedModelsError.message
                       : t("agents.config.failedToLoadAdapterModels"))}
+                </p>
+              )}
+              {adapterType === "opencode_local"
+                && currentDefaultEnvironment
+                && currentDefaultEnvironment.driver !== "local" && (
+                <p className="text-xs text-muted-foreground">
+                  Live OpenCode model discovery only runs for Local environments. Using the curated list and manual entry for {currentDefaultEnvironment.name}.
                 </p>
               )}
 

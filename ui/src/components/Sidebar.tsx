@@ -12,7 +12,10 @@ import {
   Repeat,
   GitBranch,
   Settings,
+  Globe,
+  Check,
 } from "lucide-react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SidebarSection } from "./SidebarSection";
 import { SidebarNavItem } from "./SidebarNavItem";
@@ -27,11 +30,16 @@ import { useInboxBadge } from "../hooks/useInboxBadge";
 import { Button } from "@/components/ui/button";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { SidebarCompanyMenu } from "./SidebarCompanyMenu";
+import { useTranslation } from "@/locales/i18n";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "../lib/utils";
 
 export function Sidebar() {
   const { openNewIssue } = useDialogActions();
   const { selectedCompanyId, selectedCompany } = useCompany();
   const inboxBadge = useInboxBadge(selectedCompanyId);
+  const { t, locale, setLocale } = useTranslation();
+  const [langOpen, setLangOpen] = useState(false);
   const { data: experimentalSettings } = useQuery({
     queryKey: queryKeys.instance.experimentalSettings,
     queryFn: () => instanceSettingsApi.getExperimental(),
@@ -77,12 +85,12 @@ export function Sidebar() {
             className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
           >
             <SquarePen className="h-4 w-4 shrink-0" />
-            <span className="truncate">New Issue</span>
+            <span className="truncate">{t("issues.createNew")}</span>
           </button>
-          <SidebarNavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} liveCount={liveRunCount} />
+          <SidebarNavItem to="/dashboard" label={t("nav.dashboard")} icon={LayoutDashboard} liveCount={liveRunCount} />
           <SidebarNavItem
             to="/inbox"
-            label="Inbox"
+            label={t("nav.inbox")}
             icon={Inbox}
             badge={inboxBadge.inbox}
             badgeTone={inboxBadge.failedRuns > 0 ? "danger" : "default"}
@@ -97,12 +105,12 @@ export function Sidebar() {
           />
         </div>
 
-        <SidebarSection label="Work">
-          <SidebarNavItem to="/issues" label="Issues" icon={CircleDot} />
-          <SidebarNavItem to="/routines" label="Routines" icon={Repeat} />
-          <SidebarNavItem to="/goals" label="Goals" icon={Target} />
+        <SidebarSection label={t("common.type") === "类型" ? "工作" : "Work"}>
+          <SidebarNavItem to="/issues" label={t("nav.issues")} icon={CircleDot} />
+          <SidebarNavItem to="/routines" label={t("nav.routines")} icon={Repeat} />
+          <SidebarNavItem to="/goals" label={t("nav.goals")} icon={Target} />
           {showWorkspacesLink ? (
-            <SidebarNavItem to="/workspaces" label="Workspaces" icon={GitBranch} />
+            <SidebarNavItem to="/workspaces" label={t("nav.workspaces")} icon={GitBranch} />
           ) : null}
         </SidebarSection>
 
@@ -110,12 +118,12 @@ export function Sidebar() {
 
         <SidebarAgents />
 
-        <SidebarSection label="Company">
-          <SidebarNavItem to="/org" label="Org" icon={Network} />
-          <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />
-          <SidebarNavItem to="/costs" label="Costs" icon={DollarSign} />
-          <SidebarNavItem to="/activity" label="Activity" icon={History} />
-          <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />
+        <SidebarSection label={t("common.type") === "类型" ? "公司" : "Company"}>
+          <SidebarNavItem to="/org" label={t("nav.org")} icon={Network} />
+          <SidebarNavItem to="/skills" label={t("common.type") === "类型" ? "技能" : "Skills"} icon={Boxes} />
+          <SidebarNavItem to="/costs" label={t("nav.costs")} icon={DollarSign} />
+          <SidebarNavItem to="/activity" label={t("nav.activity")} icon={History} />
+          <SidebarNavItem to="/company/settings" label={t("nav.settings")} icon={Settings} />
         </SidebarSection>
 
         <PluginSlotOutlet
@@ -125,6 +133,54 @@ export function Sidebar() {
           itemClassName="rounded-lg border border-border p-3"
           missingBehavior="placeholder"
         />
+
+        {/* Language Switcher */}
+        <div className="mt-auto pt-2 border-t border-border/50">
+          <Popover open={langOpen} onOpenChange={setLangOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+              >
+                <Globe className="h-4 w-4 shrink-0" />
+                <span className="flex-1 truncate text-left">
+                  {locale === "zh" ? "中文" : "English"}
+                </span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="top"
+              align="start"
+              sideOffset={8}
+              className="w-40 overflow-hidden rounded-xl border-border p-1 shadow-lg"
+            >
+              {[
+                { code: "en" as const, label: "English" },
+                { code: "zh" as const, label: "中文" },
+              ].map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                    locale === lang.code
+                      ? "bg-accent font-medium"
+                      : "hover:bg-accent/50",
+                  )}
+                  onClick={() => {
+                    setLocale(lang.code);
+                    setLangOpen(false);
+                  }}
+                >
+                  <span className="flex-1">{lang.label}</span>
+                  {locale === lang.code ? (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  ) : null}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
       </nav>
     </aside>
   );

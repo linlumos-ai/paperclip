@@ -18,6 +18,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { useTheme } from "../context/ThemeContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import { cn } from "../lib/utils";
 
 const PROFILE_SETTINGS_PATH = "/instance/settings/profile";
@@ -224,6 +225,9 @@ export function SidebarAccountMenu({
                   setOpen(false);
                 }}
               />
+              <div className="px-3 py-1.5">
+                <LocaleSwitcher />
+              </div>
               {deploymentMode === "authenticated" ? (
                 <button
                   type="button"

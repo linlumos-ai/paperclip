@@ -1,5 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
+import { useTranslation } from "@/locales/i18n";
 import { accessApi } from "../api/access";
 import { useDialogActions } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
@@ -87,15 +88,30 @@ function findIssuesScrollContainer(element: HTMLElement | null): HTMLElement | n
   return null;
 }
 const boardIssueStatuses = ISSUE_STATUSES;
-const issueStatusLabels: Record<IssueStatus, string> = {
-  backlog: "Backlog",
-  todo: "Todo",
-  in_progress: "In progress",
-  in_review: "In review",
-  done: "Done",
-  blocked: "Blocked",
-  cancelled: "Cancelled",
-};
+function getIssueStatusLabels(): Record<IssueStatus, string> {
+  return {
+    backlog: "Backlog",
+    todo: "Todo",
+    in_progress: "In progress",
+    in_review: "In review",
+    done: "Done",
+    blocked: "Blocked",
+    cancelled: "Cancelled",
+  };
+}
+
+function useIssueStatusLabels(): Record<IssueStatus, string> {
+  const { t } = useTranslation();
+  return {
+    backlog: t("issues.labels.backlog"),
+    todo: t("issues.labels.todo"),
+    in_progress: t("issues.labels.in_progress"),
+    in_review: t("issues.labels.in_review"),
+    done: t("issues.labels.done"),
+    blocked: t("issues.labels.blocked"),
+    cancelled: t("issues.labels.cancelled"),
+  };
+}
 const progressSegmentClasses: Record<IssueStatus, string> = {
   backlog: "bg-muted-foreground/40",
   todo: "bg-blue-500",
@@ -442,6 +458,7 @@ function SubIssueProgressSummaryStrip({
   summary: SubIssueProgressSummary;
   issueLinkState?: unknown;
 }) {
+  const issueStatusLabels = useIssueStatusLabels();
   const target = summary.target;
   const targetIssue = target?.issue ?? null;
   const targetPathId = targetIssue?.identifier ?? targetIssue?.id ?? "";
@@ -547,6 +564,7 @@ export function IssuesList({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const { selectedCompanyId } = useCompany();
   const { openNewIssue } = useDialogActions();
+  const issueStatusLabels = useIssueStatusLabels();
   const { data: session } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),

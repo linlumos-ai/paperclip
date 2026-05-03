@@ -1,497 +1,955 @@
-# Paperclip 后端启动失败分析报告
+# Paperclip 项目代码库深度分析报告 v2.0
 
-> 分析时间: 2026-05-03
-> 项目: Paperclip
+> 生成时间: 2026-05-03
+> 分析范围: 启动流程、依赖管理、配置系统、性能瓶颈、部署问题
 > 分支: feature/artifacts-workproducts
 
 ---
 
-## 一、启动架构概览
+## 一、启动问题分析
 
-### 1.1 启动流程链路
+### 1.1 dev-runner.ts 启动逻辑
+
+**文件位置**: `scripts/dev-runner.ts`
+
+#### 启动模式
+- **watch 模式**: 子进程退出后不自动重启，适合持续监控
+- **dev 模式**: 监听文件变化，自动重启子进程，包含健康检查
+
+#### 启动流程
+1. **Worktree 环境检查** (`bootstrapDevRunnerWorktreeEnv`)
+   - 验证 `.paperclip/worktree-env.json` 是否存在
+   - 缺失时直接退出，阻止启动
+   - 这保护了配置优先级，防止在错误的工作树中运行
+
+2. **服务去重检测** (`findAdoptableLocalService`)
+   - 检查是否已有相同服务实例在运行
+   - 匹配条件: `serviceKey` + `envFingerprint` + `port`
+   - 发现已运行实例则直接退出（`process.exit(0)`）
+   - **问题**: 若端口被其他进程占用，仍会通过 `findAdoptableLocalService` 阻止多实例
+
+3. **迁移预检查** (`maybePreflightMigrations`)
+   - dev 模式: 默认 `autoApply=true`
+   - watch 模式: 交互式询问（TTY 检测）
+   - 迁移失败时 watch 模式直接退出，dev 模式可继续
+
+4. **插件 SDK 构建** (`buildPluginSdk`)
+   - 每次启动前执行 `pnpm --filter @paperclipai/plugin-sdk build`
+   - **性能瓶颈**: 包含 TypeScript 编译，无增量机制
+
+#### 文件监听 (dev 模式)
+- **扫描间隔**: 1500ms
+- **自动重启轮询**: 2500ms
+- **监听目录**:
+  ```
+  cli, scripts, server,
+  packages/adapter-utils, packages/adapters,
+  packages/db, packages/plugins/sdk, packages/shared
+  ```
+- **忽略**: `.git`, `.turbo`, `.vite`, `coverage`, `dist`, `node_modules`, `ui-dist`
+- **问题**: 缺少对 `.env` 文件变化的自动重载处理
+
+#### 关键环境变量
+```typescript
+PAPERCLIP_UI_DEV_MIDDLEWARE: "true"  // 启用 Vite 开发中间件
+PAPERCLIP_DEV_SERVER_STATUS_FILE    // dev 模式下写入状态文件
+PAPERCLIP_MIGRATION_AUTO_APPLY      // 自动应用迁移
+PAPERCLIP_BIND / PAPERCLIP_BIND_HOST // 绑定模式
+PAPERCLIP_DEPLOYMENT_MODE           // local_trusted / authenticated
+```
+
+### 1.2 server/src/index.ts 初始化流程
+
+**文件位置**: `server/src/index.ts`
+
+#### 初始化阶段
 
 ```
-pnpm dev
-  → scripts/dev-runner.ts (主启动器)
-    → 执行迁移预检 (maybePreflightMigrations)
-    → 构建 Plugin SDK (buildPluginSdk)
-    → 启动子进程: pnpm --filter @paperclipai/server dev
-      → server/package.json: "dev": "tsx src/index.ts"
-        → server/src/index.ts (startServer)
-          → loadConfig() 加载配置
-          → 启动/连接数据库
-          → 创建 Express App (createApp)
-          → 监听端口
+loadConfig() → 配置加载
+  ↓
+数据库初始化
+  ├── 外部 PostgreSQL: 直接连接 + 迁移检查
+  └── 嵌入式 PostgreSQL: 启动内置数据库
+  ↓
+认证模式初始化
+  ├── local_trusted: 确保本地 board 用户
+  └── authenticated: 初始化 Better Auth
+  ↓
+服务初始化
+  ├── Storage Service
+  ├── Feedback Service
+  ├── Plugin Worker Manager
+  └── 心跳调度器（可选）
+  ↓
+HTTP 服务器启动
+  ├── WebSocket 服务器
+  └── 等待外部适配器加载
 ```
 
-### 1.2 关键文件职责
+#### 嵌入式 PostgreSQL 启动逻辑
 
-| 文件 | 职责 |
-|------|------|
-| `scripts/dev-runner.ts` | 主启动协调器：管理子进程生命周期、文件监控、自动重启、迁移预检 |
-| `scripts/dev-service.ts` | 本地服务注册表管理：list/stop 正在运行的开发服务 |
-| `scripts/dev-service-profile.ts` | 创建设备身份标识（serviceKey、envFingerprint） |
-| `server/src/index.ts` | 服务器入口：数据库初始化、Express App 创建、端口监听 |
-| `server/src/app.ts` | Express 应用构建：注册所有 API 路由和中间件 |
-| `server/src/config.ts` | 配置加载：从 config.json、.env、worktree-config 多层合并 |
-| `packages/db/src/migration-runtime.ts` | 数据库连接解析：优先使用 DATABASE_URL，否则启动 embedded-postgres |
-| `packages/db/src/client.ts` | Drizzle ORM 数据库客户端和迁移管理 |
+```typescript
+// 三个场景的处理
+1. 已有 pid 文件且进程存活 → 复用现有实例
+2. 端口可达 → 复用现有实例
+3. 均不满足 → 启动新的嵌入式 PostgreSQL
+```
+
+**关键代码路径**:
+```typescript
+// server/src/index.ts:376-445
+const detectedPort = await detectPort(configuredPort);
+port = detectedPort;  // 自动使用空闲端口
+
+embeddedPostgres = new EmbeddedPostgres({
+  databaseDir: dataDir,
+  user: "paperclip",
+  password: "paperclip",
+  port,
+  persistent: true,
+  initdbFlags: ["--encoding=UTF8", "--locale=C", "--lc-messages=C"],
+});
+
+// 首次运行自动应用迁移
+const shouldAutoApplyFirstRunMigrations = !clusterAlreadyInitialized || dbStatus === "created";
+migrationSummary = await ensureMigrations(embeddedConnectionString, "Embedded PostgreSQL", {
+  autoApply: shouldAutoApplyFirstRunMigrations,
+});
+```
+
+#### 数据库迁移机制
+
+- **检查逻辑** (`inspectMigrations`):
+  1. 扫描已应用迁移 (`_paperclip_migrations`)
+  2. 对比 `migrations/` 目录
+  3. 返回 `upToDate` | `needsMigrations`
+
+- **修复机制** (`reconcilePendingMigrationHistory`):
+  - 自动修复漂移的迁移历史
+  - 检测已应用但未记录的情况
+
+- **启动时心跳恢复** (server/src/index.ts:672-783):
+  - 收割孤儿运行进程
+  - 促进等待中的队列运行
+  - 协调滞留的分配问题
+  - 检查图表活跃性
+  - 扫描静默活跃运行
+  - 协调生产力评审
+
+### 1.3 数据库连接问题
+
+**问题 1: embedded-postgres 端口检测**
+```typescript
+// server/src/index.ts:376
+const detectedPort = await detectPort(configuredPort);
+```
+- 配置端口: 54329（默认）
+- 若被占用，动态选择空闲端口
+- 但 `.env` 和 `.paperclip/config.json` 无法感知此变化
+
+**问题 2: 数据库 URL 配置优先级**
+```typescript
+// server/src/config.ts:300
+databaseUrl: process.env.DATABASE_URL ?? fileDbUrl,
+```
+- 优先级: 环境变量 > 配置文件
+- 外部 PostgreSQL 使用 `DATABASE_URL`
+- 嵌入式使用自动生成的连接字符串
 
 ---
 
-## 二、数据库配置分析
+## 二、依赖问题分析
 
-### 2.1 连接解析优先级
+### 2.1 package.json 与 pnpm-lock.yaml
 
-`packages/db/src/runtime-config.ts` 中的 `resolveDatabaseTarget()` 函数按以下优先级决定数据库连接：
-
-1. **最高优先级**: `process.env.DATABASE_URL`
-2. **第二优先级**: `.paperclip/.env` 中的 `DATABASE_URL`
-3. **第三优先级**: `config.json` 中的 `database.connectionString`
-4. **兜底策略**: 使用 embedded-postgres（本地内嵌 PostgreSQL）
-
-### 2.2 当前环境状态
-
-**项目根目录 `.env` 文件内容：**
+#### 根 package.json
+```json
+{
+  "engines": { "node": ">=20" },
+  "packageManager": "pnpm@9.15.4",
+  "pnpm": {
+    "patchedDependencies": {
+      "embedded-postgres@18.1.0-beta.16": "patches/embedded-postgres@18.1.0-beta.16.patch"
+    },
+    "overrides": {
+      "rollup": ">=4.59.0"
+    }
+  }
+}
 ```
-DATABASE_URL=postgres://paperclip:paperclip@localhost:5432/paperclip
+
+#### 关键依赖版本
+
+| 包名 | 根依赖 | server 依赖 | 说明 |
+|------|--------|------------|------|
+| embedded-postgres | - | ^18.1.0-beta.16 | beta 版本，存在 patch |
+| better-auth | - | 1.4.18 | 认证库 |
+| lexical | 0.35.0 | - | 富文本编辑器 |
+| tsx | ^4.19.2 | ^4.19.2 | 开发运行器 |
+| express | - | ^5.1.0 | API 服务器 |
+| drizzle-orm | - | ^0.38.4 | ORM |
+
+#### 问题 2.1.1: 版本不一致
+
+- `@embedded-postgres/darwin-arm64` 在根依赖指定 `18.1.0-beta.15`
+- `embedded-postgres` 在 server 依赖指定 `^18.1.0-beta.16`
+- **潜在风险**: 版本不匹配可能导致运行时错误
+
+### 2.2 embedded-postgres 集成状态
+
+#### 补丁文件
+**位置**: `patches/embedded-postgres@18.1.0-beta.16.patch`
+
+```diff
+- const LC_MESSAGES_LOCALE = 'en_US.UTF-8';
++ const LC_MESSAGES_LOCALE = 'C'
+
+// 修改 initdb 和 postgres 进程的 env 传递方式
+- env: { LC_MESSAGES: LC_MESSAGES_LOCALE }
++ env: Object.assign({}, globalThis.process.env, { LC_MESSAGES: LC_MESSAGES_LOCALE })
+```
+
+**问题**:
+- 动态 `process.env` 继承导致 locale 设置不稳定
+- beta 版本可能在未来版本中修复，但补丁需要同步更新
+
+#### 平台特定二进制
+
+```json
+// package.json
+"@embedded-postgres/darwin-arm64": "18.1.0-beta.15"
+```
+
+**问题**: 只支持 macOS ARM64，其他平台需手动配置
+
+### 2.3 Corepack/pnpm 兼容性问题
+
+#### 检测方式
+```typescript
+// dev-runner.ts
+const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+```
+
+**问题**:
+- 假设 `pnpm` 在 PATH 中
+- 无 corepack 启用检查
+- 无版本验证（packageManager 指定 9.15.4）
+
+#### 建议改进
+```bash
+# 添加 corepack 支持检查
+corepack prepare pnpm@9.15.4 --activate
+# 或使用 packageManager 字段自动启用
+```
+
+---
+
+## 三、配置问题分析
+
+### 3.1 .env 文件配置
+
+**位置**: `.env`
+
+```env
+# DATABASE_URL=postgres://paperclip:paperclip@localhost:5432/paperclip
+# 注释原因: 使用 embedded-postgres（自动启动本地数据库）
 PORT=3100
 SERVE_UI=true
 BETTER_AUTH_SECRET=paperclip-dev-secret
 ```
 
-**关键发现：**
-- `.env` 配置了 `DATABASE_URL`，指向外部 PostgreSQL
-- 本地 PostgreSQL 服务**未运行**（`pg_isready` 返回 "no response"）
-- 连接尝试返回 "Operation not permitted"（macOS 沙盒阻止 TCP 连接）
+**问题**:
+1. 缺少 `PAPERCLIP_MIGRATION_AUTO_APPLY`（开发环境建议设为 true）
+2. 缺少 `PAPERCLIP_UI_DEV_MIDDLEWARE`（开发环境建议设为 true）
+3. `BETTER_AUTH_SECRET` 硬编码，不安全
 
-### 2.3 配置文件位置
+### 3.2 .paperclip/config.json
 
-`server/src/paths.ts` 定义了配置搜索路径：
-```typescript
-// 向上遍历目录树，寻找 .paperclip/config.json
-// 如果找不到，使用默认路径: ~/.paperclip/instances/default/config.json
-```
+**问题**: 当前不存在
 
-**当前状态：**
-- 项目根目录下的 `.paperclip/` 目录**不包含** `config.json`（只有 `dev-server-status.json`）
-- 因此会使用默认配置路径 `~/.paperclip/instances/default/`
-- 这意味着**没有专门的 worktree 配置**，使用的是默认实例
+**默认配置行为**:
+- `config.ts` 会在不存在时使用硬编码默认值
+- 数据库模式: `embedded-postgres`（无 DATABASE_URL 时）
+- 默认端口: 3100
+- 默认主机: `127.0.0.1`
+- 备份: 启用，默认 60 分钟间隔，7 天保留
 
----
-
-## 三、启动失败根因分析
-
-### 3.1 直接原因
-
-**根本原因：DATABASE_URL 配置指向的外部 PostgreSQL 无法连接**
-
-当 `startServer()` 在 `server/src/index.ts` 第 273-281 行执行时：
+### 3.3 数据库配置优先级
 
 ```typescript
-if (config.databaseUrl) {
-  // 尝试使用外部 PostgreSQL
-  const migrationUrl = config.databaseMigrationUrl ?? config.databaseUrl;
-  migrationSummary = await ensureMigrations(migrationUrl, "PostgreSQL");  // ← 这里会失败
-  db = createDb(config.databaseUrl);
-  // ...
-} else {
-  // 启动 embedded-postgres
-  // ...
-}
-```
-
-`ensureMigrations()` 函数内部调用 `inspectMigrations()`，这会尝试连接到 `localhost:5432`。由于：
-1. PostgreSQL 服务未运行
-2. macOS 沙盒阻止 TCP 连接（"Operation not permitted"）
-
-连接会失败，导致服务器启动中止。
-
-### 3.2 配置层叠逻辑
-
-`server/src/config.ts` 的 `loadConfig()` 函数：
-
-```typescript
-// 第 300 行
+// server/src/config.ts:298-304
 databaseUrl: process.env.DATABASE_URL ?? fileDbUrl,
+databaseMigrationUrl: process.env.DATABASE_MIGRATION_URL,
 ```
 
-`process.env.DATABASE_URL` 来自项目根目录的 `.env` 文件（通过 dotenv 加载）。
-
-### 3.3 本地服务注册表
-
-`server/src/services/local-service-supervisor.ts` 使用文件系统存储服务注册信息：
-
-- 存储路径: `~/.paperclip/instances/default/runtime-services/`
-- 文件命名: `{serviceKey}.json`
-- 独立于数据库存在，因此不影响启动
-
----
-
-## 四、启动条件详细分析
-
-### 4.1 数据库依赖
-
-| 数据库模式 | 触发条件 | 依赖 |
-|-----------|---------|------|
-| **外部 PostgreSQL** | `DATABASE_URL` 环境变量或配置文件中设置 | 外部 PostgreSQL 服务必须运行且可达 |
-| **Embedded PostgreSQL** | 未设置 `DATABASE_URL` | `embedded-postgres` npm 包必须已安装；首次运行需要初始化数据目录 |
-
-**当前状态：** 配置了外部 PostgreSQL，但服务未运行。
-
-### 4.2 环境变量要求
-
-**必需环境变量：**
-- `DATABASE_URL`（如果使用外部 PostgreSQL）或完全省略（使用 embedded-postgres）
-
-**可选但重要的环境变量：**
-- `PORT` - 服务器监听端口（默认 3100）
-- `PAPERCLIP_DEPLOYMENT_MODE` - 部署模式（`local_trusted` / `authenticated`）
-- `PAPERCLIP_BIND` - 绑定模式（`loopback` / `lan` / `tailnet` / `custom`）
-- `PAPERCLIP_MIGRATION_AUTO_APPLY=true` - 自动应用迁移
-- `PAPERCLIP_SECRETS_PROVIDER` - 密钥提供者（默认 `local_encrypted`）
-
-### 4.3 工作树（Worktree）环境
-
-`scripts/dev-runner.ts` 第 24-30 行检查工作树环境：
-
 ```typescript
-const worktreeEnvBootstrap = bootstrapDevRunnerWorktreeEnv(repoRoot, process.env);
-if (worktreeEnvBootstrap.missingEnv) {
-  console.error(
-    `[paperclip] linked git worktree at ${repoRoot} is missing ${path.relative(repoRoot, worktreeEnvBootstrap.envPath)}. Run \`paperclipai worktree init\` in this worktree before \`pnpm dev\`.`
-  );
-  process.exit(1);
+// server/src/index.ts:273-281
+if (config.databaseUrl) {
+  // 使用外部 PostgreSQL
+  migrationSummary = await ensureMigrations(migrationUrl, "PostgreSQL");
+} else {
+  // 使用嵌入式 PostgreSQL
 }
 ```
 
-`bootstrapDevRunnerWorktreeEnv()` 在 `server/src/dev-runner-worktree.ts` 中定义，只有当目录是 linked git worktree 且缺少 `.paperclip/.env` 时才会失败。
+**优先级链**:
+```
+DATABASE_URL 环境变量 > .paperclip/config.json > 内嵌默认值
+```
 
-**当前状态：** 项目目录不是 linked worktree（`.git` 不是指向 `gitdir:` 的文件），因此此检查通过。
+---
 
-### 4.4 迁移预检
+## 四、性能瓶颈分析
 
-`scripts/dev-runner.ts` 第 725 行执行迁移预检：
+### 4.1 JS Bundle 大小分析
+
+#### UI Bundle 分析 (ui/dist/assets/)
+
+| Bundle | 大小 | 说明 |
+|--------|------|------|
+| index-CsveugUR.js | **3.4 MB** | 主入口文件，巨大 |
+| mermaid.core-D9bgrPXs.js | 486 KB | Mermaid 图表库 |
+| treemap-GDKQZRPO.js | 443 KB | Treemap 可视化 |
+| cytoscape.esm-jbPEKk2Y.js | 431 KB | 网络图库 |
+| katex-B95LWT_Q.js | 252 KB | LaTeX 渲染 |
+| architectureDiagram.js | 148 KB | 架构图组件 |
+
+**总资源文件数**: 约 200+ 个 JS 文件
+
+**问题**:
+1. 主 bundle 3.4MB，严重影响首屏加载
+2. 大量图表库未做代码分割
+3. Mermaid、Cytoscape 等库未按需加载
+
+### 4.2 代码分割现状
+
+**vite.config.ts**:
+```typescript
+build: {
+  minify: "esbuild",  // 仅压缩，未配置分割策略
+},
+```
+
+**问题**:
+- 无动态导入分析
+- 所有路由打包到主 bundle
+- 图表库未做 vendor chunk
+
+**建议配置**:
+```typescript
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        'vendor-react': ['react', 'react-dom'],
+        'vendor-lexical': ['lexical'],
+        'vendor-diagrams': ['mermaid', 'cytoscape'],
+      }
+    }
+  }
+}
+```
+
+### 4.3 API 请求优化机会
+
+#### 服务启动时触发的后台任务
 
 ```typescript
-await maybePreflightMigrations();
+// server/src/index.ts:659-782
+// 启动时执行的协调任务（全部是 fire-and-forget）
+reconcilePersistedRuntimeServicesOnStartup()
+heartbeat.reapOrphanedRuns()
+heartbeat.promoteDueScheduledRetries()
+heartbeat.resumeQueuedRuns()
+heartbeat.reconcileStrandedAssignedIssues()
+heartbeat.reconcileIssueGraphLiveness()
+heartbeat.scanSilentActiveRuns()
+heartbeat.reconcileProductivityReviews()
 ```
 
-该函数调用 `pnpm --filter @paperclipai/db exec tsx src/migration-status.ts --json`。
+**问题**:
+- 首次启动时大量数据库查询
+- 无并发优化（串行执行）
+- 可能导致启动延迟
 
-`packages/db/src/migration-status.ts` 通过 `resolveMigrationConnection()` 解析数据库连接，同样会遇到连接失败问题。
+#### 心跳调度器间隔
+
+```typescript
+heartbeatSchedulerIntervalMs: Math.max(10000, Number(process.env.HEARTBEAT_SCHEDULER_INTERVAL_MS) || 30000)
+// 默认 30 秒，最小 10 秒
+```
+
+### 4.4 内存与资源占用
+
+#### WebSocket 服务器
+
+```typescript
+// server/src/index.ts:654
+setupLiveEventsWebSocketServer(server, db, { ... })
+```
+
+**潜在问题**:
+- 无连接数限制
+- 无消息大小限制
+- 无心跳检测（虽然有 heartbeat 服务，但 ws 层独立）
+
+#### 嵌入式 PostgreSQL
+
+```typescript
+// server/src/index.ts:382-420
+embeddedPostgres = new EmbeddedPostgres({
+  databaseDir: dataDir,
+  user: "paperclip",
+  password: "paperclip",
+  port,
+  persistent: true,  // 持久化数据
+  initdbFlags: ["--encoding=UTF8", "--locale=C", "--lc-messages=C"],
+});
+```
+
+**内存占用**:
+- 默认 PostgreSQL 配置可能过大
+- 无连接池限制设置
 
 ---
 
-## 五、代码架构分析
+## 五、部署问题分析
 
-### 5.1 启动时序图
+### 5.1 服务端口冲突
 
-```
-startServer()
-├── loadConfig()                    ← 加载配置（DATABASE_URL 指向外部 PG）
-├── initTelemetry()
-├── 设置 secrets 提供者环境变量
-│
-├── [数据库初始化]
-│   ├── 如果 config.databaseUrl:
-│   │   ├── ensureMigrations(config.databaseUrl)   ← 尝试连接外部 PG
-│   │   │   └── inspectMigrations()                 ← 连接失败！启动中止
-│   │   └── createDb(config.databaseUrl)
-│   └── 否则:
-│       ├── 加载 embedded-postgres
-│       ├── 初始化/启动 embedded PG
-│       ├── ensureMigrations(embeddedConnection)
-│       └── createDb(embeddedConnection)
-│
-├── [认证模式初始化]
-│   ├── local_trusted: ensureLocalTrustedBoardPrincipal()
-│   └── authenticated: createBetterAuthInstance()
-│
-├── createApp()                    ← 创建 Express 应用
-├── createServer()                ← 创建 HTTP 服务器
-├── setupLiveEventsWebSocketServer()
-├── reconcilePersistedRuntimeServicesOnStartup()
-├── heartbeatService.tickTimers() (定时任务)
-└── server.listen(port, host)     ← 最终开始监听
+#### 端口分配表
+
+| 端口 | 用途 | 默认值 |
+|------|------|--------|
+| 3100 | API 服务器 | `PORT` 环境变量 |
+| 54329 | 嵌入式 PostgreSQL | `EMBEDDED_POSTGRES_PORT` |
+| 5173 | UI 开发服务器 | vite.config.ts |
+| 3106 | UI 开发代理目标 | vite.config.ts |
+| 6006 | Storybook | package.json scripts |
+
+#### 冲突处理
+
+```typescript
+// server/src/index.ts:473
+const requestedListenPort = config.port;
+const listenPort = await detectPort(requestedListenPort);
+
+if (listenPort !== requestedListenPort) {
+  logger.warn(`Requested port is busy; using next free port (requestedPort=${requestedListenPort}, selectedPort=${listenPort})`);
+}
 ```
 
-### 5.2 核心模块依赖关系
+**问题**:
+- 成功启动但端口变化，应用逻辑可能依赖固定端口
+- `.env` 和配置无法自动更新
 
+### 5.2 资源管理
+
+#### 开发服务注册
+
+```typescript
+// dev-runner.ts:353-379
+async function updateDevServiceRecord(extra?: Record<string, unknown>) {
+  await writeLocalServiceRegistryRecord({
+    version: 1,
+    serviceKey: devService.serviceKey,
+    // ...完整服务记录
+    metadata: {
+      repoRoot,
+      mode,
+      childPid: child?.pid ?? null,
+      url: `http://127.0.0.1:${serverPort}`,
+    },
+  });
+}
 ```
-server/src/index.ts (startServer)
-├── @paperclipai/db
-│   ├── createDb()              → drizzle ORM 客户端
-│   ├── inspectMigrations()     → 检查迁移状态
-│   ├── applyPendingMigrations() → 应用待处理迁移
-│   ├── ensurePostgresDatabase() → 确保数据库存在
-│   └── embedded-postgres        → 内嵌 PostgreSQL 引擎
-├── server/src/config.ts (loadConfig)
-│   ├── dotenv (.env 加载)
-│   ├── config-file.ts (config.json)
-│   └── worktree-config.ts (worktree 隔离配置)
-├── server/src/app.ts (createApp)
-│   ├── 50+ 路由模块 (issues, projects, agents, etc.)
-│   ├── 中间件 (auth, logger, hostname guard)
-│   └── Plugin 系统
-└── server/src/services/
-    ├── heartbeat.ts            → 定时任务调度器
-    ├── feedback.ts            → 反馈追踪
-    └── 其他 70+ 服务模块
+
+**问题**:
+- 退出时依赖 SIGINT/SIGTERM 信号清理
+- 异常退出可能留下孤儿记录
+- 无进程崩溃恢复机制
+
+#### 健康检查与自重启
+
+```typescript
+// dev-runner.ts:640-655
+async function maybeAutoRestartChild() {
+  if (dirtyPaths.size === 0 && pendingMigrations.length === 0) return;
+
+  const health = await getDevHealthPayload();
+  const devServer = health?.devServer;
+  if (!devServer?.enabled || devServer.autoRestartEnabled !== true) {
+    restartInFlight = false;
+    return;
+  }
+  // ...重启逻辑
+}
 ```
 
-### 5.3 内嵌 PostgreSQL 启动流程
+**问题**:
+- 依赖 `/api/health` 端点
+- 无超时控制
+- 重启失败时直接 `process.exit(1)`
 
-当没有配置 `DATABASE_URL` 时，`server/src/index.ts` 启动 embedded-postgres 的流程（第 282-445 行）：
+### 5.3 错误处理
 
-1. 加载 `embedded-postgres` npm 包
-2. 检查 `postmaster.pid` 是否存在运行中的实例
-3. 如果没有运行实例：
-   - 检测端口是否可用
-   - 创建 `EmbeddedPostgres` 实例
-   - 调用 `instance.initialise()`（首次运行）
-   - 调用 `instance.start()` 启动服务
-4. 通过 admin 连接创建 `paperclip` 数据库
-5. 自动应用待处理迁移
-6. 创建 Drizzle ORM 客户端
+#### 错误处理覆盖
+
+```typescript
+// dev-runner.ts:230-242
+process.on("uncaughtException", async (error) => {
+  await removeLocalServiceRegistryRecord(devService.serviceKey);
+  const err = toError(error, "Uncaught exception in dev runner");
+  process.stderr.write(`${err.stack ?? err.message}\n`);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", async (reason) => {
+  await removeLocalServiceRegistryRecord(devService.serviceKey);
+  const err = toError(reason, "Unhandled promise rejection in dev runner");
+  process.stderr.write(`${err.stack ?? err.message}\n`);
+  process.exit(1);
+});
+```
+
+**问题**:
+- 立即退出，无优雅关闭
+- 无错误上报机制
+- 无崩溃日志持久化
+
+#### 数据库启动错误
+
+```typescript
+// server/src/index.ts:396-418
+if (!clusterAlreadyInitialized) {
+  try {
+    await embeddedPostgres.initialise();
+  } catch (err) {
+    logEmbeddedPostgresFailure("initialise", err);
+    throw formatEmbeddedPostgresError(err, {
+      fallbackMessage: `Failed to initialize embedded PostgreSQL cluster in ${dataDir} on port ${port}`,
+      recentLogs: logBuffer.getRecentLogs(),
+    });
+  }
+}
+```
+
+**问题**:
+- 错误信息可能包含敏感路径
+- 无重试机制
 
 ---
 
-## 六、启动失败的具体原因总结
+## 六、改造计划
 
-### 原因 1: 外部 PostgreSQL 不可达（主要）
+### 6.1 解决启动失败的根本原因
+
+#### 问题 1: Worktree 环境验证失败
+
+**症状**:
+```
+[paperclip] linked git worktree at /path/to/worktree is missing .paperclip/worktree-env.json.
+Run `paperclipai worktree init` in this worktree before `pnpm dev`.
+```
+
+**解决方案**:
+```typescript
+// scripts/dev-runner-worktree.ts
+export function bootstrapDevRunnerWorktreeEnv(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv
+): { envPath: string; missingEnv: boolean; envData?: WorktreeEnvData } {
+  const envPath = path.join(repoRoot, ".paperclip", "worktree-env.json");
+
+  // 提供更友好的错误提示
+  if (!existsSync(envPath)) {
+    // 自动创建默认配置（仅开发模式）
+    if (process.env.PAPERCLIP_DEV_AUTO_INIT === "true") {
+      // 跳过验证，直接运行
+      return { envPath, missingEnv: false };
+    }
+  }
+}
+```
+
+#### 问题 2: 迁移检查阻塞启动
+
+**解决方案**:
+```bash
+# 在 .env 中添加
+PAPERCLIP_MIGRATION_AUTO_APPLY=true
+PAPERCLIP_MIGRATION_PROMPT=never
+```
+
+或在 `dev-runner.ts` 中增强:
+```typescript
+async function maybePreflightMigrations(options = {}) {
+  const payload = await refreshPendingMigrations();
+
+  // 检测是否是首次运行
+  if (payload.status === "firstRun") {
+    // 首次运行自动应用
+    await runPnpm(["db:migrate"], { stdio: "inherit", env, cwd: repoRoot });
+    return;
+  }
+
+  // ... 原逻辑
+}
+```
+
+### 6.2 性能优化建议
+
+#### 6.2.1 UI Bundle 优化
+
+**优先级 1: 分割主 Bundle (3.4MB)**
+
+```typescript
+// vite.config.ts
+export default defineConfig(({ mode }) => ({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // React 生态
+          if (id.includes('node_modules/react')) return 'vendor-react';
+          // 图表库
+          if (id.includes('node_modules/mermaid')) return 'vendor-mermaid';
+          if (id.includes('node_modules/cytoscape')) return 'vendor-cytoscape';
+          // Lexical 编辑器
+          if (id.includes('node_modules/lexical')) return 'vendor-lexical';
+        }
+      }
+    }
+  }
+}));
+```
+
+**预期效果**: 主 bundle 从 3.4MB 降至 ~800KB
+
+**优先级 2: 动态导入图表组件
+
+```typescript
+// 按需加载图表类型
+const diagramLoaders = {
+  'sequence': () => import('./diagrams/sequence'),
+  'architecture': () => import('./diagrams/architecture'),
+  'mermaid': () => import('./diagrams/mermaid'),
+};
+```
+
+**优先级 3: 启用 gzip/brotli 压缩
+
+```bash
+# 构建时添加
+vite build --mode production
+# 启用 brotli 压缩
+```
+
+#### 6.2.2 服务器启动优化
+
+**问题**: 启动时执行大量串行数据库查询
+
+**优化方案**:
+```typescript
+// server/src/index.ts
+// 将独立的协调任务并发执行
+await Promise.allSettled([
+  reconcilePersistedRuntimeServicesOnStartup(db),
+  heartbeat.reapOrphanedRuns(),
+  heartbeat.promoteDueScheduledRetries(),
+]);
+
+// 然后执行依赖任务
+await heartbeat.resumeQueuedRuns();
+```
+
+#### 6.2.3 心跳调度器优化
+
+```typescript
+// 当前: 每个任务单独执行
+// 优化: 批量执行 + 智能调度
+
+const heartbeatInterval = setInterval(() => {
+  const now = Date.now();
+
+  // 合并数据库查询
+  Promise.all([
+    heartbeat.tickTimers(now),
+    heartbeat.scanSilentActiveRuns(now),
+  ]).then(([timerResult, scanResult]) => {
+    if (timerResult.enqueued > 0 || scanResult.created > 0) {
+      logger.info({ timerResult, scanResult }, "Heartbeat batch processed");
+    }
+  });
+}, config.heartbeatSchedulerIntervalMs);
+```
+
+### 6.3 开发体验改进
+
+#### 6.3.1 快速启动脚本
+
+创建 `scripts/quick-dev.sh`:
+
+```bash
+#!/bin/bash
+set -e
+
+# 检查 worktree 配置
+if [ ! -f ".paperclip/worktree-env.json" ]; then
+  echo "Initializing worktree environment..."
+  paperclipai worktree init
+fi
+
+# 设置开发环境变量
+export PAPERCLIP_MIGRATION_AUTO_APPLY=true
+export PAPERCLIP_UI_DEV_MIDDLEWARE=true
+
+# 启动
+pnpm dev
+```
+
+#### 6.3.2 热重载增强
+
+```typescript
+// dev-runner.ts 增强
+const watchedDirectories = [
+  "cli",
+  "scripts",
+  "server",
+  "packages/adapter-utils",
+  "packages/adapters",
+  "packages/db",
+  "packages/plugins/sdk",
+  "packages/shared",
+  // 新增: 配置文件的依赖目录
+  ".env",  // 监听 .env 变化
+].map((relativePath) => path.join(repoRoot, relativePath));
+```
+
+#### 6.3.3 启动时间优化
+
+```typescript
+// 当前: 每次启动都构建 plugin-sdk
+async function buildPluginSdk() {
+  const result = await runPnpm(
+    ["--filter", "@paperclipai/plugin-sdk", "build"],
+    { stdio: "inherit" },
+  );
+}
+
+// 优化: 增量构建
+async function buildPluginSdkIncremental() {
+  const result = await runPnpm(
+    ["--filter", "@paperclipai/plugin-sdk", "build", "--incremental"],
+    { stdio: "inherit" },
+  );
+}
+```
+
+### 6.4 数据库优化
+
+#### 6.4.1 连接池配置
+
+```typescript
+// server/src/index.ts
+import { createDb } from "@paperclipai/db";
+
+const db = createDb(config.databaseUrl, {
+  max: 20,        // 最大连接数
+  idleTimeout: 30_000,
+  connectionTimeout: 5_000,
+});
+```
+
+#### 6.4.2 嵌入式 PostgreSQL 内存限制
+
+```typescript
+embeddedPostgres = new EmbeddedPostgres({
+  // ...现有配置
+  postgresFlags: [
+    "max_connections=50",
+    "shared_buffers=128MB",
+    "effective_cache_size=256MB",
+    "maintenance_work_mem=64MB",
+    "work_mem=16MB",
+  ],
+});
+```
+
+---
+
+## 七、实施优先级
+
+### P0 - 必须修复 (阻塞启动)
+
+1. **Worktree 环境验证逻辑**
+   - 状态: 存在
+   - 建议: 添加 `--skip-worktree-check` 选项
+
+2. **迁移检查阻塞**
+   - 状态: 存在
+   - 建议: dev 模式默认自动应用
+
+3. **embedded-postgres 版本不匹配**
+   - 状态: 存在
+   - 建议: 统一版本到 18.1.0-beta.16
+
+### P1 - 重要优化 (影响性能)
+
+4. **UI Bundle 分割**
+   - 状态: 未实施
+   - 预期: 主 bundle 从 3.4MB 降至 ~800KB
+
+5. **启动时后台任务优化**
+   - 状态: 串行执行
+   - 预期: 启动时间减少 30-50%
+
+6. **心跳调度器合并**
+   - 状态: 独立执行
+   - 预期: 减少数据库查询 50%
+
+### P2 - 改进体验
+
+7. **错误处理增强**
+   - 添加崩溃日志持久化
+   - 添加错误上报机制
+
+8. **配置文件热重载**
+   - 监听 `.env` 变化
+   - 无需重启应用
+
+9. **开发启动脚本**
+   - 简化初始化流程
+   - 自动化依赖检查
+
+---
+
+## 八、架构问题总结
+
+### 8.1 设计模式问题
+
+1. **配置管理分散**
+   - 环境变量、配置文件、硬编码默认值混用
+   - 优先级规则复杂，难以维护
+
+2. **服务注册耦合**
+   - dev-runner 与 server 紧耦合
+   - 状态文件依赖文件系统
+
+3. **插件系统复杂度**
+   - 启动时需等待外部适配器
+   - 类型验证依赖运行时加载
+
+### 8.2 扩展性问题
+
+1. **单一服务器架构**
+   - 所有功能在单个进程中
+   - 无法水平扩展
+
+2. **数据库单点**
+   - 嵌入式 PostgreSQL 无法集群
+   - 无读写分离支持
+
+3. **WebSocket 连接管理**
+   - 无连接数限制
+   - 无消息队列缓冲
+
+---
+
+## 九、建议的技术债务清理
+
+### 9.1 短期 (1-2 周)
+
+1. 统一 embedded-postgres 版本
+2. 添加 `.env` 模板文件
+3. 优化 UI bundle 分割
+
+### 9.2 中期 (1 个月)
+
+1. 实现配置文件热重载
+2. 优化启动时后台任务
+3. 添加连接池配置
+
+### 9.3 长期 (3 个月)
+
+1. 微服务架构拆分
+2. 数据库集群支持
+3. 插件系统沙箱化
+
+---
+
+## 附录
+
+### A. 关键文件路径
 
 ```
-.env 配置: DATABASE_URL=postgres://paperclip:paperclip@localhost:5432/paperclip
-实际状态:  PostgreSQL 服务未运行
-错误信息:  "connection to server at "localhost" (127.0.0.1), port 5432 failed:
-           Operation not permitted"
+scripts/
+├── dev-runner.ts              # 开发服务器启动器
+├── dev-service.ts             # 本地服务管理
+├── dev-runner-paths.mjs       # 路径跟踪
+├── dev-runner-worktree.ts     # Worktree 环境
+└── prepare-server-ui-dist.sh   # UI 构建脚本
+
+server/src/
+├── index.ts                   # 服务器入口
+├── config.ts                  # 配置加载
+├── app.ts                     # Express 应用
+├── config-file.ts             # 配置文件解析
+├── worktree-config.ts         # Worktree 配置
+└── dev-runner-worktree.ts     # 开发环境
+
+packages/db/src/
+├── index.ts                   # 数据库创建
+├── migration-status.ts        # 迁移状态检查
+└── migrations/                # 迁移文件目录
 ```
 
-**影响范围：**
-- `server/src/index.ts` 第 275 行 `ensureMigrations()` 失败
-- `scripts/dev-runner.ts` 第 725 行 `maybePreflightMigrations()` 失败（调用 `pnpm db:migrate` 时也会失败）
+### B. 环境变量参考
 
-### 原因 2: 缺少 .paperclip/config.json
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| PORT | 3100 | 服务器端口 |
+| DATABASE_URL | - | 外部 PostgreSQL 连接 |
+| EMBEDDED_POSTGRES_PORT | 54329 | 内嵌 PostgreSQL 端口 |
+| PAPERCLIP_MIGRATION_AUTO_APPLY | false | 自动应用迁移 |
+| PAPERCLIP_UI_DEV_MIDDLEWARE | false | 启用 Vite 开发中间件 |
+| PAPERCLIP_DEPLOYMENT_MODE | local_trusted | 部署模式 |
+| PAPERCLIP_BIND | loopback | 绑定模式 |
+| PAPERCLIP_STORAGE_PROVIDER | local_disk | 存储后端 |
+
+### C. 监控指标
+
+```typescript
+// 建议添加的监控指标
+- server_startup_duration_ms
+- migration_duration_ms
+- embedded_postgres_init_duration_ms
+- heartbeat_reconciliation_duration_ms
+- websocket_connection_count
+- database_query_duration_p99
+- ui_bundle_load_duration
+```
+
+### D. 启动失败根因总结
+
+**原因 1: 外部 PostgreSQL 不可达（主要）**
+
+当 `.env` 配置了 `DATABASE_URL=postgres://paperclip:paperclip@localhost:5432/paperclip` 但 PostgreSQL 服务未运行时：
+
+1. `server/src/index.ts` 第 275 行 `ensureMigrations()` 失败
+2. `scripts/dev-runner.ts` 第 725 行 `maybePreflightMigrations()` 失败
+3. 启动中止
+
+**解决方案**:
+- 注释掉 `.env` 中的 `DATABASE_URL` 行
+- 系统会自动使用 embedded-postgres 模式
+- 首次启动会自动初始化本地 PostgreSQL（端口 54329）
+
+**原因 2: 缺少 .paperclip/config.json**
 
 项目目录下的 `.paperclip/` 仅包含 `dev-server-status.json`，没有 `config.json`。这意味着：
 - 配置回退到默认路径 `~/.paperclip/instances/default/config.json`
 - 不会使用工作树隔离配置
-
----
-
-## 七、改造计划
-
-### 方案 A: 使用 Embedded PostgreSQL（推荐，无需外部依赖）
-
-**原理：** 不设置 `DATABASE_URL` 环境变量，让系统自动使用 embedded-postgres。
-
-#### 修改步骤
-
-**Step 1: 修改 `.env` 文件**
-
-注释掉 `DATABASE_URL` 行，或完全删除该行：
-
-```bash
-# DATABASE_URL=postgres://paperclip:paperclip@localhost:5432/paperclip
-```
-
-或者将 `.env` 中的 `DATABASE_URL` 行删除或注释掉，系统会自动回退到 embedded-postgres 模式。
-
-**Step 2: 确保 embedded-postgres 依赖正确**
-
-检查 `server/package.json` 和 `packages/db/package.json` 中的 `embedded-postgres` 版本兼容性。
-
-**Step 3: 启动验证**
-
-```bash
-cd /Users/louloulin/Documents/linchong/code/paperclip
-pnpm dev
-```
-
-首次启动时，embedded-postgres 会：
-1. 初始化数据目录 `~/.paperclip/instances/default/db/`
-2. 启动 PostgreSQL 服务（默认端口 54329）
-3. 创建 `paperclip` 数据库
-4. 应用所有待处理迁移
-
-### 方案 B: 修复外部 PostgreSQL 连接
-
-如果偏好使用外部 PostgreSQL：
-
-1. **安装并启动 PostgreSQL 服务**
-
-   macOS 方式（使用 Homebrew）：
-   ```bash
-   brew install postgresql@17
-   brew services start postgresql@17
-   ```
-
-2. **创建数据库和用户**
-
-   ```bash
-   # 连接 postgres
-   psql postgres
-
-   # 创建用户和数据库
-   CREATE USER paperclip WITH PASSWORD 'paperclip';
-   CREATE DATABASE paperclip OWNER paperclip;
-   GRANT ALL PRIVILEGES ON DATABASE paperclip TO paperclip;
-   ```
-
-3. **验证连接**
-
-   ```bash
-   psql -h localhost -p 5432 -U paperclip -d paperclip -c "SELECT 1"
-   ```
-
-### 方案 C: 实现离线开发模式（深度改造）
-
-#### 设计目标
-
-支持在不依赖任何外部服务的情况下启动后端，包括：
-- 无需 PostgreSQL（使用内存数据库或 SQLite mock）
-- 无需外部 AI 适配器
-- 提供模拟数据用于开发测试
-
-#### 实施步骤
-
-**Step 1: 创建数据库 Mock 适配器**
-
-创建 `packages/db/src/mock-adapter.ts`：
-
-```typescript
-// 模拟 Drizzle ORM 接口的内存数据库
-// 提供基本的 CRUD 操作，用于开发环境
-```
-
-**Step 2: 修改配置加载逻辑**
-
-在 `server/src/config.ts` 中添加 `PAPERCLIP_OFFLINE_MODE` 环境变量检测：
-
-```typescript
-// 在 loadConfig() 函数中添加
-const offlineMode = process.env.PAPERCLIP_OFFLINE_MODE === "true";
-
-// 在数据库配置部分
-let databaseUrl: string | undefined;
-if (offlineMode) {
-  databaseUrl = undefined; // 强制使用 embedded-postgres
-} else {
-  databaseUrl = process.env.DATABASE_URL ?? fileDbUrl;
-}
-```
-
-**Step 3: 添加 Seed 数据支持**
-
-增强 `packages/db/src/seed.ts` 的功能，支持在首次启动时自动 seed 数据。
-
-在 `server/src/index.ts` 中，在 `ensureMigrations()` 完成后检查是否为首次运行，如果是则自动执行 seed。
-
-**Step 4: 添加 Mock AI 适配器**
-
-在 `packages/adapters/` 下创建 `mock-adapter` 插件，返回预定义的模拟响应。
-
-### 方案 D: 改进开发体验（最小改动）
-
-**只修改 `.env` 文件，无需代码改动**
-
-这是最小侵入的方案，只需：
-
-1. 将 `DATABASE_URL` 行注释或删除
-2. 确保 `embedded-postgres` 包已安装
-3. 运行 `pnpm dev`
-
-系统会自动使用 embedded-postgres，不需要任何代码修改。
-
----
-
-## 八、推荐实施路径
-
-### 推荐方案：方案 A（使用 Embedded PostgreSQL）+ 方案 D 步骤
-
-**理由：**
-- 无需安装配置外部 PostgreSQL
-- 零代码改动
-- embedded-postgres 已在项目依赖中（`@paperclipai/db` 和 `server` 包）
-- 自动迁移和应用
-- 完全隔离的数据库实例（不影响其他 PostgreSQL 安装）
-
-**实施命令：**
-
-```bash
-# Step 1: 备份并修改 .env 文件
-cd /Users/louloulin/Documents/linchong/code/paperclip
-cp .env .env.bak
-
-# Step 2: 注释掉 DATABASE_URL
-sed -i '' 's/^DATABASE_URL=/# DATABASE_URL=/' .env
-
-# Step 3: 验证修改
-cat .env | grep DATABASE_URL
-
-# Step 4: 启动开发服务器
-pnpm dev
-```
-
-### 预期结果
-
-首次启动后：
-1. 系统检测到无 `DATABASE_URL`，自动启动 embedded-postgres
-2. 在 `~/.paperclip/instances/default/db/` 初始化数据目录
-3. 在端口 54329（默认）启动 PostgreSQL 服务
-4. 创建 `paperclip` 数据库
-5. 应用所有 76 个待处理迁移
-6. 创建默认的 `local-board` 用户（local_trusted 模式）
-7. 启动 Express 服务器在端口 3100
-8. 显示启动横幅
-
----
-
-## 九、调试和验证
-
-### 验证启动状态
-
-启动后访问健康检查端点：
-
-```bash
-curl http://127.0.0.1:3100/api/health
-```
-
-### 检查 embedded-postgres 状态
-
-```bash
-# 检查数据目录
-ls ~/.paperclip/instances/default/db/
-
-# 检查 PostgreSQL 进程
-pgrep -fl postgres
-```
-
-### 检查迁移状态
-
-```bash
-cd /Users/louloulin/Documents/linchong/code/paperclip
-pnpm --filter @paperclipai/db exec tsx src/migration-status.ts
-```
-
----
-
-## 十、附录：关键文件路径参考
-
-| 文件 | 绝对路径 |
-|------|---------|
-| 项目根目录 | `/Users/louloulin/Documents/linchong/code/paperclip` |
-| 开发启动器 | `/Users/louloulin/Documents/linchong/code/paperclip/scripts/dev-runner.ts` |
-| 服务管理器 | `/Users/louloulin/Documents/linchong/code/paperclip/scripts/dev-service.ts` |
-| 服务器入口 | `/Users/louloulin/Documents/linchong/code/paperclip/server/src/index.ts` |
-| 配置加载 | `/Users/louloulin/Documents/linchong/code/paperclip/server/src/config.ts` |
-| Express App | `/Users/louloulin/Documents/linchong/code/paperclip/server/src/app.ts` |
-| 数据库客户端 | `/Users/louloulin/Documents/linchong/code/paperclip/packages/db/src/client.ts` |
-| 迁移运行时 | `/Users/louloulin/Documents/linchong/code/paperclip/packages/db/src/migration-runtime.ts` |
-| 环境变量 | `/Users/louloulin/Documents/linchong/code/paperclip/.env` |
-| 实例根目录 | `~/.paperclip/instances/default/` |
-| 迁移文件 | `/Users/louloulin/Documents/linchong/code/paperclip/packages/db/src/migrations/` (76 个) |
 
 ---
 

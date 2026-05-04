@@ -1,9 +1,9 @@
-# Paperclip i18n 审计报告 v2.3
+# Paperclip i18n 审计报告 v2.4
 
 > 审计日期: 2026-05-04
 > 更新日期: 2026-05-04
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
-> 状态: **部分完成 - 实际约 85%** (推进中)
+> 状态: **基本完成 - 实际约 95%**
 
 ---
 
@@ -173,7 +173,7 @@
 | 基础设施 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | i18n 系统 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | 翻译文件 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
-| 页面翻译 | ✅ 100% | ~85% | ✅ 改善中 |
+| 页面翻译 | ✅ 100% | ~95% | ✅ 基本完成 |
 | 组件翻译 | ✅ 部分 | ~25% | ❌ 失实 |
 
 ### 4.2 实际完成度
@@ -253,12 +253,12 @@
 
 ### 6.4 P3 - 低
 
-- [ ] CompanyImport.tsx
-- [ ] CompanyExport.tsx
-- [ ] InstanceGeneralSettings.tsx
-- [ ] InstanceExperimentalSettings.tsx
-- [ ] Org.tsx
-- [ ] DesignGuide.tsx (104 处)
+- [x] CompanyImport.tsx ✅ 2026-05-04
+- [x] CompanyExport.tsx ✅ 2026-05-04
+- [x] InstanceGeneralSettings.tsx ✅ 2026-05-04
+- [x] InstanceExperimentalSettings.tsx ✅ 2026-05-04
+- [x] Org.tsx ✅ 2026-05-04
+- [x] DesignGuide.tsx (~104处) ✅ 2026-05-04
 
 ---
 
@@ -292,6 +292,12 @@
 | PluginManager 页面翻译 (~35处) | ui/src/pages/PluginManager.tsx | ✅ | 2026-05-04 |
 | PluginSettings 页面翻译 (~45处) | ui/src/pages/PluginSettings.tsx | ✅ | 2026-05-04 |
 | CompanyEnvironments 页面翻译 (~42处) | ui/src/pages/CompanyEnvironments.tsx | ✅ | 2026-05-04 |
+| CompanyImport 页面翻译 (~30处) | ui/src/pages/CompanyImport.tsx | ✅ | 2026-05-04 |
+| CompanyExport 页面翻译 (~18处) | ui/src/pages/CompanyExport.tsx | ✅ | 2026-05-04 |
+| InstanceGeneralSettings 翻译 (~37处) | ui/src/pages/InstanceGeneralSettings.tsx | ✅ | 2026-05-04 |
+| InstanceExperimentalSettings 翻译 (~22处) | ui/src/pages/InstanceExperimentalSettings.tsx | ✅ | 2026-05-04 |
+| Org 页面翻译 (3处) | ui/src/pages/Org.tsx | ✅ | 2026-05-04 |
+| DesignGuide 页面翻译 (~104处) | ui/src/pages/DesignGuide.tsx | ✅ | 2026-05-04 |
 
 ### v2.1 新增翻译 key
 

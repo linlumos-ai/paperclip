@@ -61,6 +61,7 @@
     "routeNotExist": "This route does not exist.",
     "noCompanyMatchesPrefix": "No company matches prefix \"{{prefix}}\".",
     "openDashboard": "Open dashboard",
+    "openSidebar": "Open sidebar",
     "goHome": "Go home",
     "requestedPath": "Requested path:",
     "authFailed": "Authentication failed",
@@ -905,7 +906,17 @@
     "revisionRequestFailed": "Revision request failed",
     "resubmitFailed": "Resubmit failed",
     "commentFailed": "Comment failed",
-    "deleteFailed": "Delete failed"
+    "deleteFailed": "Delete failed",
+    "card": {
+      "requestedBy": "Requested by",
+      "approvalRequestCreated": "Approval request created",
+      "decisionNote": "Decision note.",
+      "approving": "Approving...",
+      "approve": "Approve",
+      "rejecting": "Rejecting...",
+      "reject": "Reject",
+      "viewDetails": "View details"
+    }
   },
   "costs": {
     "title": "Costs",
@@ -989,7 +1000,12 @@
     "byType": "By Type",
     "selectCompany": "Select a company to view activity.",
     "filterByType": "Filter by type",
-    "allTypes": "All types"
+    "allTypes": "All types",
+    "row": {
+      "system": "System",
+      "board": "Board",
+      "unknown": "Unknown"
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -1176,7 +1192,93 @@
     "startOnboarding": "Start Onboarding",
     "addAgentButton": "Add Agent",
     "newCompany": "New Company",
-    "getStarted": "Get started by creating a company."
+    "getStarted": "Get started by creating a company.",
+    "wizard": {
+      "creating": "Creating...",
+      "createAndOpenIssue": "Create & Open Issue",
+      "tabs": {
+        "company": "Company",
+        "agent": "Agent",
+        "task": "Task",
+        "launch": "Launch"
+      },
+      "step1": {
+        "title": "Name your company",
+        "subtitle": "This is the organization your agents will work for.",
+        "companyNameLabel": "Company name",
+        "companyNamePlaceholder": "Acme Corp",
+        "goalLabel": "Mission / goal (optional)",
+        "goalPlaceholder": "What is this company trying to achieve?",
+        "errors": {
+          "createCompanyFailed": "Failed to create company"
+        }
+      },
+      "step2": {
+        "title": "Create your first agent",
+        "subtitle": "Choose how this agent will run tasks.",
+        "agentNameLabel": "Agent name",
+        "agentNamePlaceholder": "CEO",
+        "adapterTypeLabel": "Adapter type",
+        "recommended": "Recommended",
+        "moreAdapterTypes": "More Agent Adapter Types",
+        "comingSoon": "Coming soon",
+        "modelLabel": "Model",
+        "selectModelRequired": "Select model (required)",
+        "default": "Default",
+        "searchModelsPlaceholder": "Search models...",
+        "noModelsDiscovered": "No models discovered.",
+        "adapterCheckTitle": "Adapter environment check",
+        "adapterCheckDescription": "Runs a live probe that asks the adapter CLI to respond with hello.",
+        "testing": "Testing...",
+        "testNow": "Test now",
+        "passed": "Passed",
+        "statusPassed": "Passed",
+        "statusWarnings": "Warnings",
+        "statusFailed": "Failed",
+        "manualDebug": "Manual debug",
+        "promptLabel": "Prompt",
+        "promptValue": "Respond with hello.",
+        "authFailHint": "If auth fails, set {{apiKey}} in env or run {{loginCmd}}.",
+        "claudeLoginHint": "If login is required, run claude login and retry.",
+        "anthropicKeyHint": "Claude failed while ANTHROPIC_API_KEY is set. You can clear it in this CEO adapter config and retry the probe.",
+        "unsetAnthropicKey": "Unset ANTHROPIC_API_KEY",
+        "retrying": "Retrying...",
+        "hintLabel": "Hint",
+        "gatewayUrlLabel": "Gateway URL",
+        "webhookUrlLabel": "Webhook URL",
+        "gatewayUrlPlaceholder": "ws://127.0.0.1:18789",
+        "webhookUrlPlaceholder": "https://...",
+        "errors": {
+          "noCompanySelected": "Create or select a company before testing adapter environment.",
+          "environmentTestFailed": "Adapter environment test failed",
+          "opencodeRequiresModel": "OpenCode requires an explicit model in provider/model format.",
+          "failedToLoadOpencodeModels": "Failed to load OpenCode models.",
+          "opencodeModelsLoading": "OpenCode models are still loading. Please wait and try again.",
+          "noOpencodeModelsDiscovered": "No OpenCode models discovered. Run `opencode models` and authenticate providers.",
+          "opencodeModelUnavailable": "Configured OpenCode model is unavailable: {{model}}",
+          "createAgentFailed": "Failed to create agent",
+          "anthropicKeyRetryFailed": "Retried with ANTHROPIC_API_KEY unset in adapter config, but the environment test is still failing.",
+          "unsetAnthropicKeyFailed": "Failed to unset ANTHROPIC_API_KEY and retry."
+        }
+      },
+      "step3": {
+        "title": "Give it something to do",
+        "subtitle": "Give your agent a small task to start with — a bug fix, a research question, writing a script.",
+        "taskTitleLabel": "Task title",
+        "taskTitlePlaceholder": "e.g. Research competitor pricing",
+        "descriptionLabel": "Description (optional)",
+        "descriptionPlaceholder": "Add more detail about what the agent should do..."
+      },
+      "step4": {
+        "title": "Ready to launch",
+        "subtitle": "Everything is set up. Launching now will create the starter task, wake the agent, and open the issue.",
+        "companyLabel": "Company",
+        "taskLabel": "Task",
+        "errors": {
+          "createTaskFailed": "Failed to create task"
+        }
+      }
+    }
   },
   "company": {
     "title": "Company Settings",

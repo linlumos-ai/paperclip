@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AdapterEnvironmentTestResult } from "@paperclipai/shared";
 import { useLocation, useNavigate, useParams } from "@/lib/router";
+import { useTranslation } from "@/locales/i18n";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { companiesApi } from "../api/companies";
@@ -69,6 +70,7 @@ const DEFAULT_TASK_DESCRIPTION = `You are the CEO. You set the direction for the
 - break the roadmap into concrete tasks and start delegating work`;
 
 export function OnboardingWizard() {
+  const { t } = useTranslation();
   const { onboardingOpen, onboardingOptions, closeOnboarding } = useDialog();
   const { companies, setSelectedCompanyId, loading: companiesLoading } = useCompany();
   const queryClient = useQueryClient();
@@ -359,7 +361,7 @@ export function OnboardingWizard() {
   ): Promise<AdapterEnvironmentTestResult | null> {
     if (!createdCompanyId) {
       setAdapterEnvError(
-        "Create or select a company before testing adapter environment."
+        t("onboarding.wizard.step2.errors.noCompanySelected")
       );
       return null;
     }
@@ -377,7 +379,7 @@ export function OnboardingWizard() {
       return result;
     } catch (err) {
       setAdapterEnvError(
-        err instanceof Error ? err.message : "Adapter environment test failed"
+        err instanceof Error ? err.message : t("onboarding.wizard.step2.errors.environmentTestFailed")
       );
       return null;
     } finally {
@@ -415,7 +417,7 @@ export function OnboardingWizard() {
 
       setStep(2);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create company");
+      setError(err instanceof Error ? err.message : t("onboarding.wizard.step1.errors.createCompanyFailed"))
     } finally {
       setLoading(false);
     }
@@ -430,7 +432,7 @@ export function OnboardingWizard() {
         const selectedModelId = model.trim();
         if (!selectedModelId) {
           setError(
-            "OpenCode requires an explicit model in provider/model format."
+            t("onboarding.wizard.step2.errors.opencodeRequiresModel")
           );
           return;
         }
@@ -438,13 +440,13 @@ export function OnboardingWizard() {
           setError(
             adapterModelsError instanceof Error
               ? adapterModelsError.message
-              : "Failed to load OpenCode models."
+              : t("onboarding.wizard.step2.errors.failedToLoadOpencodeModels")
           );
           return;
         }
         if (adapterModelsLoading || adapterModelsFetching) {
           setError(
-            "OpenCode models are still loading. Please wait and try again."
+            t("onboarding.wizard.step2.errors.opencodeModelsLoading")
           );
           return;
         }
@@ -452,8 +454,8 @@ export function OnboardingWizard() {
         if (!discoveredModels.some((entry) => entry.id === selectedModelId)) {
           setError(
             discoveredModels.length === 0
-              ? "No OpenCode models discovered. Run `opencode models` and authenticate providers."
-              : `Configured OpenCode model is unavailable: ${selectedModelId}`
+              ? t("onboarding.wizard.step2.errors.noOpencodeModelsDiscovered")
+              : t("onboarding.wizard.step2.errors.opencodeModelUnavailable", { model: selectedModelId })
           );
           return;
         }
@@ -487,7 +489,7 @@ export function OnboardingWizard() {
       });
       setStep(3);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create agent");
+      setError(err instanceof Error ? err.message : t("onboarding.wizard.step2.errors.createAgentFailed"))
     } finally {
       setLoading(false);
     }
@@ -528,14 +530,14 @@ export function OnboardingWizard() {
       const result = await runAdapterEnvironmentTest(configWithUnset);
       if (result?.status === "fail") {
         setError(
-          "Retried with ANTHROPIC_API_KEY unset in adapter config, but the environment test is still failing."
+          t("onboarding.wizard.step2.errors.anthropicKeyRetryFailed")
         );
       }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to unset ANTHROPIC_API_KEY and retry."
+          : t("onboarding.wizard.step2.errors.unsetAnthropicKeyFailed")
       );
     } finally {
       setUnsetAnthropicLoading(false);
@@ -601,7 +603,7 @@ export function OnboardingWizard() {
           : `/issues/${issueRef}`
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create task");
+      setError(err instanceof Error ? err.message : t("onboarding.wizard.step4.errors.createTaskFailed"))
     } finally {
       setLoading(false);
     }
@@ -641,7 +643,7 @@ export function OnboardingWizard() {
             className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t("common.close")}</span>
           </button>
 
           {/* Left half — form */}
@@ -656,10 +658,10 @@ export function OnboardingWizard() {
               <div className="flex items-center gap-0 mb-8 border-b border-border">
                 {(
                   [
-                    { step: 1 as Step, label: "Company", icon: Building2 },
-                    { step: 2 as Step, label: "Agent", icon: Bot },
-                    { step: 3 as Step, label: "Task", icon: ListTodo },
-                    { step: 4 as Step, label: "Launch", icon: Rocket }
+                    { step: 1 as Step, label: t("onboarding.wizard.tabs.company"), icon: Building2 },
+                    { step: 2 as Step, label: t("onboarding.wizard.tabs.agent"), icon: Bot },
+                    { step: 3 as Step, label: t("onboarding.wizard.tabs.task"), icon: ListTodo },
+                    { step: 4 as Step, label: t("onboarding.wizard.tabs.launch"), icon: Rocket }
                   ] as const
                 ).map(({ step: s, label, icon: Icon }) => (
                   <button
@@ -687,9 +689,9 @@ export function OnboardingWizard() {
                       <Building2 className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Name your company</h3>
+                      <h3 className="font-medium">{t("onboarding.wizard.step1.title")}</h3>
                       <p className="text-xs text-muted-foreground">
-                        This is the organization your agents will work for.
+                        {t("onboarding.wizard.step1.subtitle")}
                       </p>
                     </div>
                   </div>
@@ -702,11 +704,11 @@ export function OnboardingWizard() {
                           : "text-muted-foreground group-focus-within:text-foreground"
                       )}
                     >
-                      Company name
+                      {t("onboarding.wizard.step1.companyNameLabel")}
                     </label>
                     <input
                       className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
-                      placeholder="Acme Corp"
+                      placeholder={t("onboarding.wizard.step1.companyNamePlaceholder")}
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       autoFocus
@@ -721,11 +723,11 @@ export function OnboardingWizard() {
                           : "text-muted-foreground group-focus-within:text-foreground"
                       )}
                     >
-                      Mission / goal (optional)
+                      {t("onboarding.wizard.step1.goalLabel")}
                     </label>
                     <textarea
                       className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-[60px]"
-                      placeholder="What is this company trying to achieve?"
+                      placeholder={t("onboarding.wizard.step1.goalPlaceholder")}
                       value={companyGoal}
                       onChange={(e) => setCompanyGoal(e.target.value)}
                     />
@@ -740,19 +742,19 @@ export function OnboardingWizard() {
                       <Bot className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Create your first agent</h3>
+                      <h3 className="font-medium">{t("onboarding.wizard.step2.title")}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Choose how this agent will run tasks.
+                        {t("onboarding.wizard.step2.subtitle")}
                       </p>
                     </div>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      Agent name
+                      {t("onboarding.wizard.step2.agentNameLabel")}
                     </label>
                     <input
                       className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
-                      placeholder="CEO"
+                      placeholder={t("onboarding.wizard.step2.agentNamePlaceholder")}
                       value={agentName}
                       onChange={(e) => setAgentName(e.target.value)}
                       autoFocus
@@ -762,7 +764,7 @@ export function OnboardingWizard() {
                   {/* Adapter type radio cards */}
                   <div>
                     <label className="text-xs text-muted-foreground mb-2 block">
-                      Adapter type
+                      {t("onboarding.wizard.step2.adapterTypeLabel")}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {recommendedAdapters.map((opt) => (
@@ -787,7 +789,7 @@ export function OnboardingWizard() {
                         >
                           {opt.recommended && (
                             <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
-                              Recommended
+                              {t("onboarding.wizard.step2.recommended")}
                             </span>
                           )}
                           <opt.icon className="h-4 w-4" />
@@ -809,7 +811,7 @@ export function OnboardingWizard() {
                           showMoreAdapters ? "rotate-0" : "-rotate-90"
                         )}
                       />
-                      More Agent Adapter Types
+                      {t("onboarding.wizard.step2.moreAdapterTypes")}
                     </button>
 
                     {showMoreAdapters && (
@@ -851,7 +853,7 @@ export function OnboardingWizard() {
                             <span className="font-medium">{opt.label}</span>
                             <span className="text-muted-foreground text-[10px]">
                               {opt.comingSoon
-                                ? opt.disabledLabel ?? "Coming soon"
+                                ? opt.disabledLabel ?? t("onboarding.wizard.step2.comingSoon")
                                 : opt.description}
                             </span>
                           </button>
@@ -865,7 +867,7 @@ export function OnboardingWizard() {
                     <div className="space-y-3">
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">
-                          Model
+                          {t("onboarding.wizard.step2.modelLabel")}
                         </label>
                         <Popover
                           open={modelOpen}
@@ -885,8 +887,8 @@ export function OnboardingWizard() {
                                   ? selectedModel.label
                                   : model ||
                                     (adapterType === "opencode_local"
-                                      ? "Select model (required)"
-                                      : "Default")}
+                                      ? t("onboarding.wizard.step2.selectModelRequired")
+                                      : t("onboarding.wizard.step2.default"))}
                               </span>
                               <ChevronDown className="h-3 w-3 text-muted-foreground" />
                             </button>
@@ -897,7 +899,7 @@ export function OnboardingWizard() {
                           >
                             <input
                               className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
-                              placeholder="Search models..."
+                              placeholder={t("onboarding.wizard.step2.searchModelsPlaceholder")}
                               value={modelSearch}
                               onChange={(e) => setModelSearch(e.target.value)}
                               autoFocus
@@ -913,7 +915,7 @@ export function OnboardingWizard() {
                                   setModelOpen(false);
                                 }}
                               >
-                                Default
+                                {t("onboarding.wizard.step2.default")}
                               </button>
                             )}
                             <div className="max-h-[240px] overflow-y-auto">
@@ -954,7 +956,7 @@ export function OnboardingWizard() {
                             </div>
                             {filteredModels.length === 0 && (
                               <p className="px-2 py-1.5 text-xs text-muted-foreground">
-                                No models discovered.
+                                {t("onboarding.wizard.step2.noModelsDiscovered")}
                               </p>
                             )}
                           </PopoverContent>
@@ -968,11 +970,10 @@ export function OnboardingWizard() {
                       <div className="flex items-center justify-between gap-2">
                         <div>
                           <p className="text-xs font-medium">
-                            Adapter environment check
+                            {t("onboarding.wizard.step2.adapterCheckTitle")}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            Runs a live probe that asks the adapter CLI to
-                            respond with hello.
+                            {t("onboarding.wizard.step2.adapterCheckDescription")}
                           </p>
                         </div>
                         <Button
@@ -982,7 +983,7 @@ export function OnboardingWizard() {
                           disabled={adapterEnvLoading}
                           onClick={() => void runAdapterEnvironmentTest()}
                         >
-                          {adapterEnvLoading ? "Testing..." : "Test now"}
+                          {adapterEnvLoading ? t("onboarding.wizard.step2.testing") : t("onboarding.wizard.step2.testNow")}
                         </Button>
                       </div>
 
@@ -996,7 +997,7 @@ export function OnboardingWizard() {
                       adapterEnvResult.status === "pass" ? (
                         <div className="flex items-center gap-2 rounded-md border border-green-300 dark:border-green-500/40 bg-green-50 dark:bg-green-500/10 px-3 py-2 text-xs text-green-700 dark:text-green-300 animate-in fade-in slide-in-from-bottom-1 duration-300">
                           <Check className="h-3.5 w-3.5 shrink-0" />
-                          <span className="font-medium">Passed</span>
+                          <span className="font-medium">{t("onboarding.wizard.step2.passed")}</span>
                         </div>
                       ) : adapterEnvResult ? (
                         <AdapterEnvironmentResult result={adapterEnvResult} />
@@ -1005,10 +1006,7 @@ export function OnboardingWizard() {
                       {shouldSuggestUnsetAnthropicApiKey && (
                         <div className="rounded-md border border-amber-300/60 bg-amber-50/40 px-2.5 py-2 space-y-2">
                           <p className="text-[11px] text-amber-900/90 leading-relaxed">
-                            Claude failed while{" "}
-                            <span className="font-mono">ANTHROPIC_API_KEY</span>{" "}
-                            is set. You can clear it in this CEO adapter config
-                            and retry the probe.
+                            {t("onboarding.wizard.step2.anthropicKeyHint")}
                           </p>
                           <Button
                             size="sm"
@@ -1020,15 +1018,15 @@ export function OnboardingWizard() {
                             onClick={() => void handleUnsetAnthropicApiKey()}
                           >
                             {unsetAnthropicLoading
-                              ? "Retrying..."
-                              : "Unset ANTHROPIC_API_KEY"}
+                              ? t("onboarding.wizard.step2.retrying")
+                              : t("onboarding.wizard.step2.unsetAnthropicKey")}
                           </Button>
                         </div>
                       )}
 
                       {adapterEnvResult && adapterEnvResult.status === "fail" && (
                         <div className="rounded-md border border-border/70 bg-muted/20 px-2.5 py-2 text-[11px] space-y-1.5">
-                          <p className="font-medium">Manual debug</p>
+                          <p className="font-medium">{t("onboarding.wizard.step2.manualDebug")}</p>
                           <p className="text-muted-foreground font-mono break-all">
                             {adapterType === "cursor"
                               ? `${effectiveAdapterCommand} -p --mode ask --output-format json \"Respond with hello.\"`
@@ -1041,39 +1039,32 @@ export function OnboardingWizard() {
                               : `${effectiveAdapterCommand} --print - --output-format stream-json --verbose`}
                           </p>
                           <p className="text-muted-foreground">
-                            Prompt:{" "}
-                            <span className="font-mono">Respond with hello.</span>
+                            {t("onboarding.wizard.step2.promptLabel")}:{" "}
+                            <span className="font-mono">{t("onboarding.wizard.step2.promptValue")}</span>
                           </p>
                           {adapterType === "cursor" ||
                           adapterType === "codex_local" ||
                           adapterType === "gemini_local" ||
                           adapterType === "opencode_local" ? (
                             <p className="text-muted-foreground">
-                              If auth fails, set{" "}
-                              <span className="font-mono">
-                                {adapterType === "cursor"
+                              {t("onboarding.wizard.step2.authFailHint", {
+                                apiKey: adapterType === "cursor"
                                   ? "CURSOR_API_KEY"
                                   : adapterType === "gemini_local"
                                     ? "GEMINI_API_KEY"
-                                    : "OPENAI_API_KEY"}
-                              </span>{" "}
-                              in env or run{" "}
-                              <span className="font-mono">
-                                {adapterType === "cursor"
+                                    : "OPENAI_API_KEY",
+                                loginCmd: adapterType === "cursor"
                                   ? "agent login"
                                   : adapterType === "codex_local"
                                     ? "codex login"
                                     : adapterType === "gemini_local"
                                       ? "gemini auth"
-                                      : "opencode auth login"}
-                              </span>
-                              .
+                                      : "opencode auth login",
+                              })}
                             </p>
                           ) : (
                             <p className="text-muted-foreground">
-                              If login is required, run{" "}
-                              <span className="font-mono">claude login</span>{" "}
-                              and retry.
+                              {t("onboarding.wizard.step2.claudeLoginHint")}
                             </p>
                           )}
                         </div>
@@ -1086,15 +1077,15 @@ export function OnboardingWizard() {
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">
                         {adapterType === "openclaw_gateway"
-                          ? "Gateway URL"
-                          : "Webhook URL"}
+                          ? t("onboarding.wizard.step2.gatewayUrlLabel")
+                          : t("onboarding.wizard.step2.webhookUrlLabel")}
                       </label>
                       <input
                         className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm font-mono outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
                         placeholder={
                           adapterType === "openclaw_gateway"
-                            ? "ws://127.0.0.1:18789"
-                            : "https://..."
+                            ? t("onboarding.wizard.step2.gatewayUrlPlaceholder")
+                            : t("onboarding.wizard.step2.webhookUrlPlaceholder")
                         }
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
@@ -1111,20 +1102,19 @@ export function OnboardingWizard() {
                       <ListTodo className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Give it something to do</h3>
+                      <h3 className="font-medium">{t("onboarding.wizard.step3.title")}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Give your agent a small task to start with — a bug fix,
-                        a research question, writing a script.
+                        {t("onboarding.wizard.step3.subtitle")}
                       </p>
                     </div>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      Task title
+                      {t("onboarding.wizard.step3.taskTitleLabel")}
                     </label>
                     <input
                       className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
-                      placeholder="e.g. Research competitor pricing"
+                      placeholder={t("onboarding.wizard.step3.taskTitlePlaceholder")}
                       value={taskTitle}
                       onChange={(e) => setTaskTitle(e.target.value)}
                       autoFocus
@@ -1132,12 +1122,12 @@ export function OnboardingWizard() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
-                      Description (optional)
+                      {t("onboarding.wizard.step3.descriptionLabel")}
                     </label>
                     <textarea
                       ref={textareaRef}
                       className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 resize-none min-h-[120px] max-h-[300px] overflow-y-auto"
-                      placeholder="Add more detail about what the agent should do..."
+                      placeholder={t("onboarding.wizard.step3.descriptionPlaceholder")}
                       value={taskDescription}
                       onChange={(e) => setTaskDescription(e.target.value)}
                     />
@@ -1152,10 +1142,9 @@ export function OnboardingWizard() {
                       <Rocket className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Ready to launch</h3>
+                      <h3 className="font-medium">{t("onboarding.wizard.step4.title")}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Everything is set up. Launching now will create the
-                        starter task, wake the agent, and open the issue.
+                        {t("onboarding.wizard.step4.subtitle")}
                       </p>
                     </div>
                   </div>
@@ -1166,7 +1155,7 @@ export function OnboardingWizard() {
                         <p className="text-sm font-medium truncate">
                           {companyName}
                         </p>
-                        <p className="text-xs text-muted-foreground">Company</p>
+                        <p className="text-xs text-muted-foreground">{t("onboarding.wizard.step4.companyLabel")}</p>
                       </div>
                       <Check className="h-4 w-4 text-green-500 shrink-0" />
                     </div>
@@ -1188,7 +1177,7 @@ export function OnboardingWizard() {
                         <p className="text-sm font-medium truncate">
                           {taskTitle}
                         </p>
-                        <p className="text-xs text-muted-foreground">Task</p>
+                        <p className="text-xs text-muted-foreground">{t("onboarding.wizard.step4.taskLabel")}</p>
                       </div>
                       <Check className="h-4 w-4 text-green-500 shrink-0" />
                     </div>
@@ -1214,7 +1203,7 @@ export function OnboardingWizard() {
                       disabled={loading}
                     >
                       <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                      Back
+                      {t("common.back")}
                     </Button>
                   )}
                 </div>
@@ -1230,7 +1219,7 @@ export function OnboardingWizard() {
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}
-                      {loading ? "Creating..." : "Next"}
+                      {loading ? t("onboarding.wizard.creating") : t("common.next")}
                     </Button>
                   )}
                   {step === 2 && (
@@ -1246,7 +1235,7 @@ export function OnboardingWizard() {
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}
-                      {loading ? "Creating..." : "Next"}
+                      {loading ? t("onboarding.wizard.creating") : t("common.next")}
                     </Button>
                   )}
                   {step === 3 && (
@@ -1260,7 +1249,7 @@ export function OnboardingWizard() {
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}
-                      {loading ? "Creating..." : "Next"}
+                      {loading ? t("onboarding.wizard.creating") : t("common.next")}
                     </Button>
                   )}
                   {step === 4 && (
@@ -1270,7 +1259,7 @@ export function OnboardingWizard() {
                       ) : (
                         <ArrowRight className="h-3.5 w-3.5 mr-1" />
                       )}
-                      {loading ? "Creating..." : "Create & Open Issue"}
+                      {loading ? t("onboarding.wizard.creating") : t("onboarding.wizard.createAndOpenIssue")}
                     </Button>
                   )}
                 </div>
@@ -1298,12 +1287,13 @@ function AdapterEnvironmentResult({
 }: {
   result: AdapterEnvironmentTestResult;
 }) {
+  const { t } = useTranslation();
   const statusLabel =
     result.status === "pass"
-      ? "Passed"
+      ? t("onboarding.wizard.step2.statusPassed")
       : result.status === "warn"
-      ? "Warnings"
-      : "Failed";
+      ? t("onboarding.wizard.step2.statusWarnings")
+      : t("onboarding.wizard.step2.statusFailed");
   const statusClass =
     result.status === "pass"
       ? "text-green-700 dark:text-green-300 border-green-300 dark:border-green-500/40 bg-green-50 dark:bg-green-500/10"
@@ -1337,7 +1327,7 @@ function AdapterEnvironmentResult({
             )}
             {check.hint && (
               <span className="block opacity-90 break-words">
-                Hint: {check.hint}
+                {t("onboarding.wizard.step2.hintLabel")}: {check.hint}
               </span>
             )}
           </div>

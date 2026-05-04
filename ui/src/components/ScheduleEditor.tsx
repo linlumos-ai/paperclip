@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "@/locales/i18n";
 
 type SchedulePreset = "every_minute" | "every_hour" | "every_day" | "weekdays" | "weekly" | "monthly" | "custom";
 
@@ -160,6 +161,7 @@ export function ScheduleEditor({
   const [dayOfWeek, setDayOfWeek] = useState(parsed.dayOfWeek);
   const [dayOfMonth, setDayOfMonth] = useState(parsed.dayOfMonth);
   const [customCron, setCustomCron] = useState(preset === "custom" ? value : "");
+  const { t } = useTranslation();
 
   // Sync from external value changes
   useEffect(() => {
@@ -196,7 +198,7 @@ export function ScheduleEditor({
     <div className="space-y-3">
       <Select value={preset} onValueChange={(v) => handlePresetChange(v as SchedulePreset)}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Choose frequency..." />
+          <SelectValue placeholder={t("routines.chooseFrequency")} />
         </SelectTrigger>
         <SelectContent>
           {PRESETS.map((p) => (
@@ -215,7 +217,7 @@ export function ScheduleEditor({
               setCustomCron(e.target.value);
               emitChange("custom", hour, minute, dayOfWeek, dayOfMonth, e.target.value);
             }}
-            placeholder="0 10 * * *"
+            placeholder={t("routines.cronPlaceholder")}
             className="font-mono text-sm"
           />
           <p className="text-xs text-muted-foreground">

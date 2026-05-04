@@ -63,7 +63,8 @@
     "goHome": "Go home",
     "requestedPath": "Requested path:",
     "authFailed": "Authentication failed",
-    "requiredFieldsMissing": "Please fill in all required fields."
+    "requiredFieldsMissing": "Please fill in all required fields.",
+    "searchPlaceholder": "Search issues, agents, projects..."
   },
   "org": {
     "title": "Org Chart",
@@ -386,7 +387,12 @@
       "noWorkspaceConfig": "No workspace command config is defined for this workspace yet.",
       "noJobsConfigured": "No one-shot jobs are configured for this workspace yet.",
       "disabledHint": "Project workspaces need a working directory before local commands can run, and services also need runtime config."
-    }
+    },
+    "namePlaceholder": "Project name",
+    "descriptionPlaceholder": "Add description...",
+    "githubRepoPlaceholder": "https://github.com/org/repo",
+    "workspacePathPlaceholder": "/absolute/path/to/workspace",
+    "targetDatePlaceholder": "Target date"
   },
   "goals": {
     "title": "Goals",
@@ -406,7 +412,9 @@
     "addDescription": "Add a description...",
     "subGoal": "Sub Goal",
     "noSubGoals": "No sub-goals.",
-    "noLinkedProjects": "No linked projects."
+    "noLinkedProjects": "No linked projects.",
+    "goalTitlePlaceholder": "Goal title",
+    "descriptionPlaceholder": "Add description..."
   },
   "routines": {
     "title": "Routines",
@@ -507,7 +515,9 @@
     "noActivityYet": "No activity yet.",
     "api": "API",
     "webhook": "Webhook",
-    "clipboardAccessDenied": "Clipboard access was denied."
+    "clipboardAccessDenied": "Clipboard access was denied.",
+    "chooseFrequency": "Choose frequency...",
+    "cronPlaceholder": "0 10 * * *"
   },
   "approvals": {
     "title": "Approvals",
@@ -596,7 +606,8 @@
     "agentBudgetsDesc": "Recurring monthly spend policies for individual agents.",
     "projectBudgetsDesc": "Lifetime spend policies for execution-bound projects.",
     "noBudgetPolicies": "No budget policies yet. Set agent and project budgets from their detail pages.",
-    "resolveHardStops": "Resolve hard stops here by raising the budget or explicitly keeping the scope paused."
+    "resolveHardStops": "Resolve hard stops here by raising the budget or explicitly keeping the scope paused.",
+    "budgetAmountPlaceholder": "0.00"
   },
   "activity": {
     "title": "Activity",
@@ -1910,5 +1921,9 @@
     "paperclip": "Paperclip",
     "joinRequestRejected": "This join request was not approved.",
     "joinRequestUsed": "This invite has already been used."
+  },
+  "comments": {
+    "leaveComment": "Leave a comment...",
+    "assignee": "Assignee"
   }
 }

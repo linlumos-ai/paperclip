@@ -63,7 +63,8 @@
     "goHome": "返回首页",
     "requestedPath": "请求路径：",
     "authFailed": "认证失败",
-    "requiredFieldsMissing": "请填写所有必填字段。"
+    "requiredFieldsMissing": "请填写所有必填字段。",
+    "searchPlaceholder": "搜索任务、智能体、项目..."
   },
   "org": {
     "title": "组织架构",
@@ -386,7 +387,12 @@
       "noWorkspaceConfig": "此工作空间尚未定义工作空间命令配置。",
       "noJobsConfigured": "此工作空间尚未配置任何一次性作业。",
       "disabledHint": "项目工作空间需要工作目录才能运行本地命令，且服务也需要运行时配置。"
-    }
+    },
+    "namePlaceholder": "项目名称",
+    "descriptionPlaceholder": "添加描述...",
+    "githubRepoPlaceholder": "https://github.com/org/repo",
+    "workspacePathPlaceholder": "/absolute/path/to/workspace",
+    "targetDatePlaceholder": "目标日期"
   },
   "goals": {
     "title": "目标",
@@ -406,7 +412,9 @@
     "addDescription": "添加描述...",
     "subGoal": "子目标",
     "noSubGoals": "暂无子目标。",
-    "noLinkedProjects": "暂无关联项目。"
+    "noLinkedProjects": "暂无关联项目。",
+    "goalTitlePlaceholder": "目标标题",
+    "descriptionPlaceholder": "添加描述..."
   },
   "routines": {
     "title": "定时任务",
@@ -507,7 +515,9 @@
     "noActivityYet": "暂无活动记录。",
     "api": "API",
     "webhook": "Webhook",
-    "clipboardAccessDenied": "剪贴板访问被拒绝。"
+    "clipboardAccessDenied": "剪贴板访问被拒绝。",
+    "chooseFrequency": "选择频率...",
+    "cronPlaceholder": "0 10 * * *"
   },
   "approvals": {
     "title": "审批",
@@ -596,7 +606,8 @@
     "agentBudgetsDesc": "各智能体的循环月度支出策略。",
     "projectBudgetsDesc": "执行绑定项目的生命周期支出策略。",
     "noBudgetPolicies": "暂无预算策略。从详情页设置智能体和项目预算。",
-    "resolveHardStops": "在此通过提高预算或明确保持范围暂停来解决硬性停止。"
+    "resolveHardStops": "在此通过提高预算或明确保持范围暂停来解决硬性停止。",
+    "budgetAmountPlaceholder": "0.00"
   },
   "activity": {
     "title": "活动",
@@ -1910,5 +1921,9 @@
     "paperclip": "Paperclip",
     "joinRequestRejected": "此加入请求未被批准。",
     "joinRequestUsed": "此邀请已被使用。"
+  },
+  "comments": {
+    "leaveComment": "留下评论...",
+    "assignee": "负责人"
   }
 }

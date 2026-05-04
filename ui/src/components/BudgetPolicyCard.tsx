@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { BudgetPolicySummary } from "@paperclipai/shared";
 import { AlertTriangle, PauseCircle, ShieldAlert, Wallet } from "lucide-react";
 import { cn, formatCents } from "../lib/utils";
+import { useTranslation } from "@/locales/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ export function BudgetPolicyCard({
   compact?: boolean;
   variant?: "card" | "plain";
 }) {
+  const { t } = useTranslation();
   const [draftBudget, setDraftBudget] = useState(centsInputValue(summary.amount));
 
   useEffect(() => {
@@ -137,7 +139,7 @@ export function BudgetPolicyCard({
           onChange={(event) => setDraftBudget(event.target.value)}
           className="mt-2"
           inputMode="decimal"
-          placeholder="0.00"
+          placeholder={t("costs.budgetAmountPlaceholder")}
         />
       </div>
       <Button

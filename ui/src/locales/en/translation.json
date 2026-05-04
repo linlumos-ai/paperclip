@@ -61,7 +61,9 @@
     "noCompanyMatchesPrefix": "No company matches prefix \"{{prefix}}\".",
     "openDashboard": "Open dashboard",
     "goHome": "Go home",
-    "requestedPath": "Requested path:"
+    "requestedPath": "Requested path:",
+    "authFailed": "Authentication failed",
+    "requiredFieldsMissing": "Please fill in all required fields."
   },
   "org": {
     "title": "Org Chart",
@@ -513,7 +515,15 @@
     "all": "All Approvals",
     "approve": "Approve",
     "reject": "Reject",
-    "requestChanges": "Request Changes"
+    "requestChanges": "Request Changes",
+    "failedToApprove": "Failed to approve",
+    "failedToReject": "Failed to reject",
+    "approveFailed": "Approve failed",
+    "rejectFailed": "Reject failed",
+    "revisionRequestFailed": "Revision request failed",
+    "resubmitFailed": "Resubmit failed",
+    "commentFailed": "Comment failed",
+    "deleteFailed": "Delete failed"
   },
   "costs": {
     "title": "Costs",
@@ -627,7 +637,13 @@
     "noRecentItems": "No recent inbox items.",
     "noFilterResults": "No inbox items match these filters.",
     "archived": "Archived",
-    "otherResults": "Other results"
+    "otherResults": "Other results",
+    "failedToApprove": "Failed to approve",
+    "failedToReject": "Failed to reject",
+    "failedToArchive": "Failed to archive issue",
+    "failedToUndoArchive": "Failed to undo inbox archive",
+    "failedToApproveJoinRequest": "Failed to approve join request",
+    "failedToRejectJoinRequest": "Failed to reject join request"
   },
   "joinRequestQueue": {
     "title": "Join Request Queue",
@@ -1217,6 +1233,9 @@
       "lookbackHoursInvalid": "Lookback hours must be a whole number from 1 to 720.",
       "loading": "Loading experimental settings...",
       "loadError": "Failed to load experimental settings.",
+      "failedToUpdate": "Failed to update experimental settings.",
+      "failedToPreviewRecovery": "Failed to preview recovery tasks.",
+      "failedToCreateRecovery": "Failed to create recovery tasks.",
       "recoveryDialog": {
         "title": "Confirm auto-recovery",
         "checkingCandidates": "Checking recovery candidates before enabling.",

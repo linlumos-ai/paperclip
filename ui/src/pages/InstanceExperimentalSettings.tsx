@@ -153,7 +153,7 @@ export function InstanceExperimentalSettings() {
       ]);
     },
     onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to update experimental settings.");
+      setActionError(error instanceof Error ? error.message : t("instance.experimentalPage.failedToUpdate"));
     },
   });
 
@@ -166,7 +166,7 @@ export function InstanceExperimentalSettings() {
       setPreviewDialogOpen(true);
     },
     onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to preview recovery tasks.");
+      setActionError(error instanceof Error ? error.message : t("instance.experimentalPage.failedToPreviewRecovery"));
     },
   });
 
@@ -182,7 +182,7 @@ export function InstanceExperimentalSettings() {
       ]);
     },
     onError: (error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to create recovery tasks.");
+      setActionError(error instanceof Error ? error.message : t("instance.experimentalPage.failedToCreateRecovery"));
     },
   });
 

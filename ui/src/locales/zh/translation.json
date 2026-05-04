@@ -61,7 +61,9 @@
     "noCompanyMatchesPrefix": "没有匹配前缀 \"{{prefix}}\" 的公司。",
     "openDashboard": "打开仪表板",
     "goHome": "返回首页",
-    "requestedPath": "请求路径："
+    "requestedPath": "请求路径：",
+    "authFailed": "认证失败",
+    "requiredFieldsMissing": "请填写所有必填字段。"
   },
   "org": {
     "title": "组织架构",
@@ -513,7 +515,15 @@
     "all": "全部审批",
     "approve": "批准",
     "reject": "拒绝",
-    "requestChanges": "请求修改"
+    "requestChanges": "请求修改",
+    "failedToApprove": "批准失败",
+    "failedToReject": "拒绝失败",
+    "approveFailed": "批准失败",
+    "rejectFailed": "拒绝失败",
+    "revisionRequestFailed": "请求修改失败",
+    "resubmitFailed": "重新提交失败",
+    "commentFailed": "评论失败",
+    "deleteFailed": "删除失败"
   },
   "costs": {
     "title": "成本",
@@ -627,7 +637,13 @@
     "noRecentItems": "没有最近项目。",
     "noFilterResults": "没有匹配筛选条件的项目。",
     "archived": "已归档",
-    "otherResults": "其他结果"
+    "otherResults": "其他结果",
+    "failedToApprove": "批准失败",
+    "failedToReject": "拒绝失败",
+    "failedToArchive": "归档任务失败",
+    "failedToUndoArchive": "撤销归档失败",
+    "failedToApproveJoinRequest": "批准加入请求失败",
+    "failedToRejectJoinRequest": "拒绝加入请求失败"
   },
   "joinRequestQueue": {
     "title": "加入请求队列",
@@ -1217,6 +1233,9 @@
       "lookbackHoursInvalid": "回溯小时数必须是 1 到 720 之间的整数。",
       "loading": "正在加载实验性设置...",
       "loadError": "加载实验性设置失败。",
+      "failedToUpdate": "更新实验性设置失败。",
+      "failedToPreviewRecovery": "预览恢复任务失败。",
+      "failedToCreateRecovery": "创建恢复任务失败。",
       "recoveryDialog": {
         "title": "确认自动恢复",
         "checkingCandidates": "正在检查恢复候选项后再启用。",

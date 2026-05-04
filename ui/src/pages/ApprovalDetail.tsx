@@ -15,8 +15,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, ChevronRight, Sparkles } from "lucide-react";
 import type { ApprovalComment } from "@paperclipai/shared";
 import { MarkdownBody } from "../components/MarkdownBody";
+import { useTranslation } from "@/locales/i18n";
 
 export function ApprovalDetail() {
+  const { t } = useTranslation();
   const { approvalId } = useParams<{ approvalId: string }>();
   const { selectedCompanyId, setSelectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
@@ -91,7 +93,7 @@ export function ApprovalDetail() {
       refresh();
       navigate(`/approvals/${approvalId}?resolved=approved`, { replace: true });
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Approve failed"),
+    onError: (err) => setError(err instanceof Error ? err.message : t("approvals.approveFailed")),
   });
 
   const rejectMutation = useMutation({
@@ -100,7 +102,7 @@ export function ApprovalDetail() {
       setError(null);
       refresh();
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Reject failed"),
+    onError: (err) => setError(err instanceof Error ? err.message : t("approvals.rejectFailed")),
   });
 
   const revisionMutation = useMutation({
@@ -109,7 +111,7 @@ export function ApprovalDetail() {
       setError(null);
       refresh();
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Revision request failed"),
+    onError: (err) => setError(err instanceof Error ? err.message : t("approvals.revisionRequestFailed")),
   });
 
   const resubmitMutation = useMutation({
@@ -118,7 +120,7 @@ export function ApprovalDetail() {
       setError(null);
       refresh();
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Resubmit failed"),
+    onError: (err) => setError(err instanceof Error ? err.message : t("approvals.resubmitFailed")),
   });
 
   const addCommentMutation = useMutation({
@@ -128,7 +130,7 @@ export function ApprovalDetail() {
       setError(null);
       refresh();
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Comment failed"),
+    onError: (err) => setError(err instanceof Error ? err.message : t("approvals.commentFailed")),
   });
 
   const deleteAgentMutation = useMutation({
@@ -138,7 +140,7 @@ export function ApprovalDetail() {
       refresh();
       navigate("/approvals");
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Delete failed"),
+    onError: (err) => setError(err instanceof Error ? err.message : t("approvals.deleteFailed")),
   });
 
   if (isLoading) return <PageSkeleton variant="detail" />;

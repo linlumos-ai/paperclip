@@ -39,8 +39,17 @@
     "inactive": "未激活",
     "settings": "设置",
     "profile": "个人资料",
+    "archived": "已归档",
+    "draft": "草稿",
+    "on": "开启",
+    "off": "关闭",
+    "running": "运行中",
+    "idle": "空闲",
+    "offline": "离线",
     "logout": "退出登录",
     "version": "版本",
+    "language": "语言",
+    "switchLanguage": "切换语言",
     "noData": "暂无数据",
     "noResults": "未找到结果",
     "unknown": "未知",
@@ -412,6 +421,11 @@
       "member": "成员",
       "viewer": "观察者"
     }
+  },
+  "emptyState": {
+    "noItems": "暂无内容",
+    "createFirst": "创建你的第一个 {{item}} 以开始。",
+    "noResults": "没有匹配的搜索结果。"
   },
   "toast": {
     "saved": "已保存",

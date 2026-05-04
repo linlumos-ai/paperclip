@@ -1,8 +1,9 @@
 # Paperclip i18n 审计报告 v2.0
 
 > 审计日期: 2026-05-04
+> 更新日期: 2026-05-04
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
-> 状态: **部分完成 - 实际约 40-60%**
+> 状态: **部分完成 - 实际约 50%** (正在推进)
 
 ---
 
@@ -230,10 +231,11 @@
 
 ### 6.1 P0 - 紧急
 
-- [ ] EmptyState.tsx - 添加空状态翻译 key
+- [x] EmptyState.tsx - 添加空状态翻译 key ✅ 2026-05-04
 - [ ] 各页面的 setError 错误消息国际化
 - [ ] 表单 placeholder 翻译
-- [ ] StatusBadge 状态翻译
+- [x] StatusBadge 状态翻译 ✅ 2026-05-04
+- [x] LocaleSwitcher 'Language' 文本翻译 ✅ 2026-05-04
 
 ### 6.2 P1 - 高
 
@@ -267,6 +269,48 @@
 - [ ] 无用户可见的硬编码英文文本
 - [ ] 中英文切换流畅
 - [ ] zh.md 更新为准确状态
+
+---
+
+## 八、实现记录 (2026-05-04)
+
+### 已完成的改进
+
+| 功能 | 文件 | 状态 | 日期 |
+|------|------|------|------|
+| EmptyState 空状态翻译 | ui/src/components/EmptyState.tsx | ✅ | 2026-05-04 |
+| StatusBadge 状态翻译 | ui/src/components/StatusBadge.tsx | ✅ | 2026-05-04 |
+| LocaleSwitcher 文本翻译 | ui/src/components/LocaleSwitcher.tsx | ✅ | 2026-05-04 |
+| 新增 common 状态 key | ui/src/locales/*/translation.json | ✅ | 2026-05-04 |
+
+### 新增翻译 key
+
+```json
+{
+  "common": {
+    "archived": "Archived / 已归档",
+    "draft": "Draft / 草稿",
+    "on": "On / 开启",
+    "off": "Off / 关闭",
+    "running": "Running / 运行中",
+    "idle": "Idle / 空闲",
+    "offline": "Offline / 离线",
+    "language": "Language / 语言",
+    "switchLanguage": "Switch language / 切换语言"
+  },
+  "emptyState": {
+    "noItems": "No items / 暂无内容",
+    "createFirst": "Create your first {{item}}... / 创建你的第一个...",
+    "noResults": "No results match your search. / 没有匹配的搜索结果。"
+  }
+}
+```
+
+### 修改的组件
+
+1. **EmptyState.tsx**: 支持 `messageKey` 和 `actionKey` 参数，自动使用 `t()` 翻译
+2. **StatusBadge.tsx**: 自动尝试翻译状态值，支持 common 和 agents.status 命名空间
+3. **LocaleSwitcher.tsx**: 使用 `t("common.language")` 和 `t("common.switchLanguage")`
 
 ---
 

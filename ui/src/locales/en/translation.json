@@ -39,8 +39,17 @@
     "inactive": "Inactive",
     "settings": "Settings",
     "profile": "Profile",
+    "archived": "Archived",
+    "draft": "Draft",
+    "on": "On",
+    "off": "Off",
+    "running": "Running",
+    "idle": "Idle",
+    "offline": "Offline",
     "logout": "Logout",
     "version": "Version",
+    "language": "Language",
+    "switchLanguage": "Switch language",
     "noData": "No data",
     "noResults": "No results found",
     "unknown": "Unknown",
@@ -412,6 +421,11 @@
       "member": "Member",
       "viewer": "Viewer"
     }
+  },
+  "emptyState": {
+    "noItems": "No items",
+    "createFirst": "Create your first {{item}} to get started.",
+    "noResults": "No results match your search."
   },
   "toast": {
     "saved": "Saved",

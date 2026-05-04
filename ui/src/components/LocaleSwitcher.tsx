@@ -10,7 +10,7 @@ const LOCALES: { code: Locale; label: string; nativeLabel: string }[] = [
 ];
 
 export function LocaleSwitcher() {
-  const { locale, setLocale } = useTranslation();
+  const { locale, setLocale, t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -19,7 +19,7 @@ export function LocaleSwitcher() {
         <button
           type="button"
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          aria-label="Switch language"
+          aria-label={t("common.switchLanguage")}
         >
           <Globe className="size-4 shrink-0" />
           <span className="flex-1 truncate">
@@ -34,7 +34,7 @@ export function LocaleSwitcher() {
         className="w-48 overflow-hidden rounded-xl border-border p-1 shadow-lg"
       >
         <div className="px-2 py-1.5">
-          <p className="text-xs font-medium text-muted-foreground">Language</p>
+          <p className="text-xs font-medium text-muted-foreground">{t("common.language")}</p>
         </div>
         {LOCALES.map((l) => (
           <button

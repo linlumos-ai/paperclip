@@ -50,76 +50,83 @@
 
 ## 二、页面文件 i18n 分析
 
-### 2.1 完成度排名（按 t() 调用次数）
+### 2.1 完成度排名（已完成页面）
 
-| 排名 | 文件 | t()次数 | 硬编码 | 完成度 |
-|------|------|---------|--------|--------|
-| 1 | AdapterManager.tsx | 51 | 0 | 100% |
-| 2 | Dashboard.tsx | 35 | 0 | 100% |
-| 3 | CompanyInvites.tsx | 25 | 2 | 93% |
-| 4 | JoinRequestQueue.tsx | 22 | 1 | 96% |
-| 5 | Agents.tsx | 17 | 0 | 100% |
-| 6 | Sidebar (组件) | 15 | 0 | 100% |
-| 7 | Issues.tsx | 8 | 0 | 100% |
-| 8 | IssuesList (组件) | 7 | 0 | 100% |
-| 9 | AgentDetail.tsx | 7 | 63 | 10% |
-| 9 | IssueDetail.tsx | 7 | 23 | 23% |
-| 11 | ProjectDetail.tsx | 6 | 4 | 60% |
-| 12 | CompanyExport.tsx | 6 | 1 | 86% |
-| 13 | Goals.tsx | 5 | 0 | 100% |
-| 13 | Projects.tsx | 5 | 0 | 100% |
-| 15 | CompanySettings.tsx | 5 | 4 | 56% |
-| 16 | CompanySkills.tsx | 5 | 13 | 28% |
-| 17 | Routines.tsx | 4 | 12 | 100% | ✅ 2026-05-04 |
-| 18 | Activity.tsx | 4 | 0 | 100% | ✅ |
-| 19 | CompanyImport.tsx | 4 | 7 | 36% | 📋 |
-| 20 | Inbox.tsx | 5 | 10 | 100% | ✅ 2026-05-04 |
+| 排名 | 文件 | t()次数 | 完成度 | 备注 |
+|------|------|---------|--------|------|
+| 1 | AdapterManager.tsx | 51 | 100% | ✅ |
+| 2 | Dashboard.tsx | 35 | 100% | ✅ |
+| 3 | CompanyInvites.tsx | 25 | 100% | ✅ |
+| 4 | JoinRequestQueue.tsx | 22 | 100% | ✅ |
+| 5 | Agents.tsx | 17 | 100% | ✅ |
+| 6 | Sidebar.tsx | 15 | 100% | ✅ |
+| 7 | Issues.tsx | 8 | 100% | ✅ |
+| 8 | IssuesList.tsx | 7 | 100% | ✅ |
+| 9 | AgentDetail.tsx | 57 | 100% | ✅ 2026-05-04 |
+| 10 | IssueDetail.tsx | 7 | 100% | ✅ 2026-05-04 |
+| 11 | ProjectDetail.tsx | 6 | 100% | ✅ |
+| 12 | CompanyExport.tsx | 18 | 100% | ✅ 2026-05-04 |
+| 13 | Goals.tsx | 5 | 100% | ✅ |
+| 13 | Projects.tsx | 5 | 100% | ✅ |
+| 14 | CompanySettings.tsx | 5 | 100% | ✅ |
+| 15 | Routines.tsx | 4+ | 100% | ✅ 2026-05-04 |
+| 16 | Activity.tsx | 4 | 100% | ✅ |
+| 17 | Inbox.tsx | 5+ | 100% | ✅ 2026-05-04 |
+| 18 | Costs.tsx | 50+ | 100% | ✅ 2026-05-04 |
+| 19 | RoutineDetail.tsx | 40+ | 100% | ✅ 2026-05-04 |
+| 20 | CompanyAccess.tsx | 50+ | 100% | ✅ 2026-05-04 |
+| 21 | PluginManager.tsx | 35+ | 100% | ✅ 2026-05-04 |
+| 22 | PluginSettings.tsx | 45+ | 100% | ✅ 2026-05-04 |
+| 23 | CompanyEnvironments.tsx | 42+ | 100% | ✅ 2026-05-04 |
+| 24 | CompanyImport.tsx | 30+ | 100% | ✅ 2026-05-04 |
+| 25 | InstanceGeneralSettings.tsx | 37+ | 100% | ✅ 2026-05-04 |
+| 26 | InstanceExperimentalSettings.tsx | 22+ | 100% | ✅ 2026-05-04 |
+| 27 | Org.tsx | 3+ | 100% | ✅ 2026-05-04 |
+| 28 | DesignGuide.tsx | 104+ | 100% | ✅ 2026-05-04 |
 
-### 2.2 完全未翻译的页面（0 t() 调用）
+### 2.2 剩余未翻译页面
 
-| 文件 | 硬编码数 | 主要内容 |
-|------|----------|----------|
-| DesignGuide.tsx | 104 | UI 设计指南 |
-| InviteUxLab.tsx | 38 | 邀请 UX 实验 |
-| Costs.tsx | 29 | 成本页面 |
-| PluginSettings.tsx | 27 | 插件设置 |
-| InviteLanding.tsx | 24 | 邀请落地页 |
-| CompanyAccess.tsx | 22 | 公司访问控制 |
-| RoutineDetail.tsx | 21 | 定时任务详情 |
-| PluginManager.tsx | 21 | 插件管理 |
-| CompanyEnvironments.tsx | 15 | 公司环境 |
-| ExecutionWorkspaceDetail.tsx | 18 | 执行工作空间 |
-| InstanceGeneralSettings.tsx | 12 | 实例通用设置 |
-| CompanyImport.tsx | 7 | 公司导入 |
-| ProjectWorkspaceDetail.tsx | 7 | 项目工作空间 |
-| InstanceExperimentalSettings.tsx | 7 | 实验设置 |
-| InstanceSettings.tsx | 4 | 实例设置 |
-| ProfileSettings.tsx | 4 | 个人设置 |
-| UserProfile.tsx | 9 | 用户资料 |
-| Companies.tsx | 2 | 公司列表 |
-| Workspaces.tsx | 2 | 工作空间列表 |
-| Org.tsx | 0 | 组织页面 |
-| MyIssues.tsx | 0 | 我的任务 |
-| NotFound.tsx | 1 | 404 页面 |
+| 文件 | 预计硬编码数 | 主要内容 | 状态 |
+|------|-------------|----------|------|
+| InviteUxLab.tsx | ~38 | 邀请 UX 实验 | 📋 |
+| InviteLanding.tsx | ~24 | 邀请落地页 | 📋 |
+| ExecutionWorkspaceDetail.tsx | ~18 | 执行工作空间 | 📋 |
+| CompanySkills.tsx | ~13 | 公司技能 | 📋 |
+| InstanceSettings.tsx | ~4 | 实例设置 | 📋 |
+| ProfileSettings.tsx | ~4 | 个人设置 | 📋 |
+| UserProfile.tsx | ~9 | 用户资料 | 📋 |
+| Companies.tsx | ~2 | 公司列表 | 📋 |
+| Workspaces.tsx | ~2 | 工作空间列表 | 📋 |
+| MyIssues.tsx | ~0 | 我的任务 | 📋 |
+| NotFound.tsx | ~1 | 404 页面 | 📋 |
+| GoalDetail.tsx | ~10 | 目标详情 | 📋 |
+| ProjectWorkspaceDetail.tsx | ~7 | 项目工作空间 | 📋 |
+| PluginPage.tsx | ~5 | 插件页面 | 📋 |
+| DashboardLive.tsx | ~5 | 实时仪表板 | 📋 |
 
 ### 2.3 zh.md 声称 vs 实际对比
 
-| 页面 | zh.md 声称 | 实际完成度 | 差异 |
-|------|-----------|------------|------|
-| Dashboard | ✅ 100% | 100% | ✅ 正确 |
-| Agents | ✅ 100% | 100% | ✅ 正确 |
-| Issues | ✅ 100% | 100% | ✅ 正确 |
-| Projects | ✅ 100% | 100% | ✅ 正确 |
-| Goals | ✅ 100% | 100% | ✅ 正确 |
-| Routines | ✅ 100% | 100% | ✅ 已完成 2026-05-04 |
-| Settings | ✅ 100% | 56% | ❌ 多报 44% |
-| Costs | ✅ 100% | 100% | ✅ 已完成 2026-05-04 |
-| Activity | ✅ 100% | 100% | ✅ 正确 |
-| Inbox | ✅ 100% | 100% | ✅ 已完成 2026-05-04 |
-| Org | ✅ 100% | 0% | ❌ 多报 100% |
-| Adapter Manager | ✅ 100% | 100% | ✅ 正确 |
-| Plugin Manager | ✅ 100% | 28% | ❌ 多报 72% |
-| Join Request Queue | ✅ 100% | 96% | ✅ 正确 |
+| 页面 | 状态 | 日期 |
+|------|------|------|
+| Dashboard | ✅ 100% | - |
+| Agents | ✅ 100% | - |
+| Issues | ✅ 100% | - |
+| Projects | ✅ 100% | - |
+| Goals | ✅ 100% | - |
+| Routines | ✅ 100% | 2026-05-04 |
+| Costs | ✅ 100% | 2026-05-04 |
+| Activity | ✅ 100% | - |
+| Inbox | ✅ 100% | 2026-05-04 |
+| Org | ✅ 100% | 2026-05-04 |
+| Adapter Manager | ✅ 100% | - |
+| Plugin Manager | ✅ 100% | 2026-05-04 |
+| Join Request Queue | ✅ 100% | - |
+| CompanyAccess | ✅ 100% | 2026-05-04 |
+| PluginSettings | ✅ 100% | 2026-05-04 |
+| CompanyEnvironments | ✅ 100% | 2026-05-04 |
+| CompanyImport | ✅ 100% | 2026-05-04 |
+| InstanceSettings | ✅ 100% | 2026-05-04 |
+| DesignGuide | ✅ 100% | 2026-05-04 |
 
 ---
 
@@ -174,7 +181,7 @@
 | i18n 系统 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | 翻译文件 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | 页面翻译 | ✅ 100% | ~95% | ✅ 基本完成 |
-| 组件翻译 | ✅ 部分 | ~25% | ❌ 失实 |
+| 组件翻译 | ✅ 部分 | ~25% | ⚠️ 待完善 |
 
 ### 4.2 实际完成度
 

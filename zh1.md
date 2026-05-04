@@ -1,4 +1,4 @@
-# Paperclip i18n 审计报告 v2.9
+# Paperclip i18n 审计报告 v2.10
 
 > 审计日期: 2026-05-04
 > 更新日期: 2026-05-04
@@ -197,7 +197,7 @@
 | 页面翻译 | ✅ 100% | ✅ 100% | ✅ 完成 |
 | 错误消息 | ✅ 完成 | ✅ 100% | ✅ 完成 |
 | Placeholder | ✅ 完成 | ✅ 100% | ✅ 完成 |
-| 组件翻译 | ✅ 部分 | ~70% | ⚠️ 继续完善 |
+| 组件翻译 | ✅ 部分 | ~75% | ⚠️ 继续完善 |
 
 ### 4.2 实际完成度
 
@@ -206,8 +206,8 @@
 | 页面翻译 | 100% | 0 |
 | 错误消息 | 100% | 0 |
 | Placeholder | 100% | 0 |
-| 组件 | 70% | ~70 |
-| **总计** | **~98%** | **~70** |
+| 组件 | 75% | ~50 |
+| **总计** | **~99%** | **~50** |
 
 ---
 
@@ -340,6 +340,7 @@
 | Placeholder 翻译 | CommentThread, NewGoalDialog, NewProjectDialog, CommandPalette, ScheduleEditor, BudgetPolicyCard | ✅ | 2026-05-04 |
 | 核心组件翻译 | IssueProperties (~52), AgentProperties (~9), GoalProperties (~7), ProjectProperties (~70), IssueChatThread (~45) | ✅ | 2026-05-04 |
 | 配置/编辑组件翻译 | AgentConfigForm (~79), EnvVarEditor (~12), RoutineVariablesEditor (~17), IssueDocumentsSection (~45) | ✅ | 2026-05-04 |
+| UI 组件翻译 | ApprovalCard (~8), ActivityRow (~3), BreadcrumbBar (~1), OnboardingWizard (~60) | ✅ | 2026-05-04 |
 
 ### v2.1 新增翻译 key
 

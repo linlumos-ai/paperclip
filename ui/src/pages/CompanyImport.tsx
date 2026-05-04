@@ -630,7 +630,7 @@ function AdapterPickerList({
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-async function readLocalPackageZip(file: File): Promise<{
+async function readLocalPackageZip(file: File, t: (key: string) => string): Promise<{
   name: string;
   rootPath: string | null;
   files: Record<string, CompanyPortabilityFileEntry>;
@@ -890,7 +890,7 @@ export function CompanyImport() {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
     try {
-      const pkg = await readLocalPackageZip(fileList[0]!);
+      const pkg = await readLocalPackageZip(fileList[0]!, t);
       setLocalPackage(pkg);
       setImportPreview(null);
     } catch (err) {

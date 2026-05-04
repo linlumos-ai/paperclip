@@ -1,9 +1,9 @@
-# Paperclip i18n 审计报告 v2.7
+# Paperclip i18n 审计报告 v2.8
 
 > 审计日期: 2026-05-04
 > 更新日期: 2026-05-04
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
-> 状态: **Placeholder 翻译完成**
+> 状态: **核心组件翻译完成**
 
 ---
 
@@ -197,7 +197,7 @@
 | 页面翻译 | ✅ 100% | ✅ 100% | ✅ 完成 |
 | 错误消息 | ✅ 完成 | ✅ 100% | ✅ 完成 |
 | Placeholder | ✅ 完成 | ✅ 100% | ✅ 完成 |
-| 组件翻译 | ✅ 部分 | ~30% | ⚠️ 待完善 |
+| 组件翻译 | ✅ 部分 | ~60% | ⚠️ 继续完善 |
 
 ### 4.2 实际完成度
 
@@ -206,8 +206,8 @@
 | 页面翻译 | 100% | 0 |
 | 错误消息 | 100% | 0 |
 | Placeholder | 100% | 0 |
-| 组件 | 30% | ~180 |
-| **总计** | **~95%** | **~180** |
+| 组件 | 60% | ~100 |
+| **总计** | **~97%** | **~100** |
 
 ---
 
@@ -338,6 +338,7 @@
 | InstanceSettings 页面翻译 (~16处) | ui/src/pages/InstanceSettings.tsx | ✅ | 2026-05-04 |
 | 错误消息国际化 | Auth.tsx, Approvals.tsx, Inbox.tsx, ApprovalDetail.tsx, InstanceExperimentalSettings.tsx | ✅ | 2026-05-04 |
 | Placeholder 翻译 | CommentThread, NewGoalDialog, NewProjectDialog, CommandPalette, ScheduleEditor, BudgetPolicyCard | ✅ | 2026-05-04 |
+| 核心组件翻译 | IssueProperties (~52), AgentProperties (~9), GoalProperties (~7), ProjectProperties (~70), IssueChatThread (~45) | ✅ | 2026-05-04 |
 
 ### v2.1 新增翻译 key
 

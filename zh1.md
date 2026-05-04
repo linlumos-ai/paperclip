@@ -1,9 +1,9 @@
-# Paperclip i18n 审计报告 v2.1
+# Paperclip i18n 审计报告 v2.2
 
 > 审计日期: 2026-05-04
 > 更新日期: 2026-05-04
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
-> 状态: **部分完成 - 实际约 65%** (推进中)
+> 状态: **部分完成 - 实际约 75%** (推进中)
 
 ---
 
@@ -173,7 +173,7 @@
 | 基础设施 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | i18n 系统 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | 翻译文件 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
-| 页面翻译 | ✅ 100% | ~65% | ✅ 改善中 |
+| 页面翻译 | ✅ 100% | ~75% | ✅ 改善中 |
 | 组件翻译 | ✅ 部分 | ~25% | ❌ 失实 |
 
 ### 4.2 实际完成度
@@ -239,9 +239,9 @@
 
 ### 6.2 P1 - 高
 
-- [ ] AgentDetail.tsx - 63 处硬编码翻译
-- [ ] IssueDetail.tsx - 23 处硬编码翻译
-- [ ] RoutineDetail.tsx - 21 处硬编码翻译
+- [x] AgentDetail.tsx - 63 处硬编码翻译 ✅ 2026-05-04
+- [x] IssueDetail.tsx - 23 处硬编码翻译 ✅ 2026-05-04
+- [x] RoutineDetail.tsx - 21 处硬编码翻译 ✅ 2026-05-04
 - [x] Costs.tsx - 29 处硬编码翻译 ✅ 2026-05-04
 
 ### 6.3 P2 - 中
@@ -285,6 +285,9 @@
 | Costs 页面翻译 (29处) | ui/src/pages/Costs.tsx | ✅ | 2026-05-04 |
 | Routines 页面翻译 (12处) | ui/src/pages/Routines.tsx | ✅ | 2026-05-04 |
 | Inbox 页面翻译 (~50处) | ui/src/pages/Inbox.tsx | ✅ | 2026-05-04 |
+| AgentDetail 页面翻译 (~30处) | ui/src/pages/AgentDetail.tsx | ✅ | 2026-05-04 |
+| IssueDetail 页面翻译 (4处) | ui/src/pages/IssueDetail.tsx | ✅ | 2026-05-04 |
+| RoutineDetail 页面翻译 (~40处) | ui/src/pages/RoutineDetail.tsx | ✅ | 2026-05-04 |
 
 ### v2.1 新增翻译 key
 

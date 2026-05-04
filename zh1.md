@@ -1,9 +1,9 @@
-# Paperclip i18n 审计报告 v2.2
+# Paperclip i18n 审计报告 v2.3
 
 > 审计日期: 2026-05-04
 > 更新日期: 2026-05-04
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
-> 状态: **部分完成 - 实际约 75%** (推进中)
+> 状态: **部分完成 - 实际约 85%** (推进中)
 
 ---
 
@@ -173,7 +173,7 @@
 | 基础设施 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | i18n 系统 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | 翻译文件 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
-| 页面翻译 | ✅ 100% | ~75% | ✅ 改善中 |
+| 页面翻译 | ✅ 100% | ~85% | ✅ 改善中 |
 | 组件翻译 | ✅ 部分 | ~25% | ❌ 失实 |
 
 ### 4.2 实际完成度
@@ -246,10 +246,10 @@
 
 ### 6.3 P2 - 中
 
-- [ ] CompanyAccess.tsx - 22 处硬编码翻译
-- [ ] PluginManager.tsx - 21 处硬编码翻译
-- [ ] PluginSettings.tsx - 27 处硬编码翻译
-- [ ] CompanyEnvironments.tsx - 15 处硬编码翻译
+- [x] CompanyAccess.tsx - 22 处硬编码翻译 ✅ 2026-05-04
+- [x] PluginManager.tsx - 21 处硬编码翻译 ✅ 2026-05-04
+- [x] PluginSettings.tsx - 27 处硬编码翻译 ✅ 2026-05-04
+- [x] CompanyEnvironments.tsx - 15 处硬编码翻译 ✅ 2026-05-04
 
 ### 6.4 P3 - 低
 
@@ -288,6 +288,10 @@
 | AgentDetail 页面翻译 (~30处) | ui/src/pages/AgentDetail.tsx | ✅ | 2026-05-04 |
 | IssueDetail 页面翻译 (4处) | ui/src/pages/IssueDetail.tsx | ✅ | 2026-05-04 |
 | RoutineDetail 页面翻译 (~40处) | ui/src/pages/RoutineDetail.tsx | ✅ | 2026-05-04 |
+| CompanyAccess 页面翻译 (~50处) | ui/src/pages/CompanyAccess.tsx | ✅ | 2026-05-04 |
+| PluginManager 页面翻译 (~35处) | ui/src/pages/PluginManager.tsx | ✅ | 2026-05-04 |
+| PluginSettings 页面翻译 (~45处) | ui/src/pages/PluginSettings.tsx | ✅ | 2026-05-04 |
+| CompanyEnvironments 页面翻译 (~42处) | ui/src/pages/CompanyEnvironments.tsx | ✅ | 2026-05-04 |
 
 ### v2.1 新增翻译 key
 

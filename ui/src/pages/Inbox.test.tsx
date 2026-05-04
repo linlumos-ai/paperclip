@@ -300,9 +300,11 @@ describe("InboxIssueTrailingColumns", () => {
   });
 });
 
+const mockT = (key: string) => key;
+
 describe("formatJoinRequestInboxLabel", () => {
   it("shows the human requester's name and email when available", () => {
-    expect(formatJoinRequestInboxLabel(createJoinRequest())).toBe(
+    expect(formatJoinRequestInboxLabel(createJoinRequest(), mockT)).toBe(
       "Jordan Example (joiner@example.com)",
     );
   });
@@ -315,6 +317,7 @@ describe("formatJoinRequestInboxLabel", () => {
           requestEmailSnapshot: "snapshot@example.com",
           requestingUserId: null,
         }),
+        mockT,
       ),
     ).toBe("snapshot@example.com");
   });

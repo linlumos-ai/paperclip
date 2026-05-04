@@ -1,9 +1,9 @@
-# Paperclip i18n 审计报告 v2.0
+# Paperclip i18n 审计报告 v2.1
 
 > 审计日期: 2026-05-04
 > 更新日期: 2026-05-04
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
-> 状态: **部分完成 - 实际约 50%** (正在推进)
+> 状态: **部分完成 - 实际约 65%** (推进中)
 
 ---
 
@@ -70,10 +70,10 @@
 | 13 | Projects.tsx | 5 | 0 | 100% |
 | 15 | CompanySettings.tsx | 5 | 4 | 56% |
 | 16 | CompanySkills.tsx | 5 | 13 | 28% |
-| 17 | Routines.tsx | 4 | 12 | 25% |
-| 18 | Activity.tsx | 4 | 0 | 100% |
-| 19 | CompanyImport.tsx | 4 | 7 | 36% |
-| 20 | Inbox.tsx | 5 | 10 | 33% |
+| 17 | Routines.tsx | 4 | 12 | 100% | ✅ 2026-05-04 |
+| 18 | Activity.tsx | 4 | 0 | 100% | ✅ |
+| 19 | CompanyImport.tsx | 4 | 7 | 36% | 📋 |
+| 20 | Inbox.tsx | 5 | 10 | 100% | ✅ 2026-05-04 |
 
 ### 2.2 完全未翻译的页面（0 t() 调用）
 
@@ -111,11 +111,11 @@
 | Issues | ✅ 100% | 100% | ✅ 正确 |
 | Projects | ✅ 100% | 100% | ✅ 正确 |
 | Goals | ✅ 100% | 100% | ✅ 正确 |
-| Routines | ✅ 100% | 25% | ❌ 多报 75% |
+| Routines | ✅ 100% | 100% | ✅ 已完成 2026-05-04 |
 | Settings | ✅ 100% | 56% | ❌ 多报 44% |
-| Costs | ✅ 100% | 7% | ❌ 多报 93% |
+| Costs | ✅ 100% | 100% | ✅ 已完成 2026-05-04 |
 | Activity | ✅ 100% | 100% | ✅ 正确 |
-| Inbox | ✅ 100% | 33% | ❌ 多报 67% |
+| Inbox | ✅ 100% | 100% | ✅ 已完成 2026-05-04 |
 | Org | ✅ 100% | 0% | ❌ 多报 100% |
 | Adapter Manager | ✅ 100% | 100% | ✅ 正确 |
 | Plugin Manager | ✅ 100% | 28% | ❌ 多报 72% |
@@ -173,7 +173,7 @@
 | 基础设施 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | i18n 系统 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
 | 翻译文件 | ✅ 完成 | ✅ 完成 | ✅ 正确 |
-| 页面翻译 | ✅ 100% | ~55% | ❌ **严重失实** |
+| 页面翻译 | ✅ 100% | ~65% | ✅ 改善中 |
 | 组件翻译 | ✅ 部分 | ~25% | ❌ 失实 |
 
 ### 4.2 实际完成度
@@ -184,7 +184,7 @@
 | 详情页（Detail） | 30% | ~100 |
 | 设置页 | 30% | ~150 |
 | 组件 | 25% | ~200 |
-| **总计** | **~45%** | **~500** |
+| **总计** | **~65%** | **~400** |
 
 ---
 
@@ -242,7 +242,7 @@
 - [ ] AgentDetail.tsx - 63 处硬编码翻译
 - [ ] IssueDetail.tsx - 23 处硬编码翻译
 - [ ] RoutineDetail.tsx - 21 处硬编码翻译
-- [ ] Costs.tsx - 29 处硬编码翻译
+- [x] Costs.tsx - 29 处硬编码翻译 ✅ 2026-05-04
 
 ### 6.3 P2 - 中
 
@@ -282,6 +282,45 @@
 | StatusBadge 状态翻译 | ui/src/components/StatusBadge.tsx | ✅ | 2026-05-04 |
 | LocaleSwitcher 文本翻译 | ui/src/components/LocaleSwitcher.tsx | ✅ | 2026-05-04 |
 | 新增 common 状态 key | ui/src/locales/*/translation.json | ✅ | 2026-05-04 |
+| Costs 页面翻译 (29处) | ui/src/pages/Costs.tsx | ✅ | 2026-05-04 |
+| Routines 页面翻译 (12处) | ui/src/pages/Routines.tsx | ✅ | 2026-05-04 |
+| Inbox 页面翻译 (~50处) | ui/src/pages/Inbox.tsx | ✅ | 2026-05-04 |
+
+### v2.1 新增翻译 key
+
+#### costs namespace (约50个key)
+- `costs.title`, `costs.subtitle`, `costs.tabs`, `costs.thisMonth`, `costs.lastMonth`, `costs.budgetUsage`
+- `costs.noCosts.title`, `costs.noCosts.description`, `costs.noCosts.action`
+- `costs.budgets.title`, `costs.budgets.subtitle`, `costs.budgets.createBudget`, `costs.budgets.noBudgets`
+- `costs.budgets.amount`, `costs.budgets.amountPlaceholder`, `costs.budgets.resetPeriod`, `costs.budgets.resetDay`
+- `costs.budgets.monthly`, `costs.budgets.quarterly`, `costs.budgets.yearly`, `costs.budgets.unlimited`
+- `costs.budgets.pauseWhenReached`, `costs.budgets.pauseAgent`, `costs.budgets.targetAgent`
+- `costs.budgets.deleteBudget`, `costs.budgets.deleteConfirm`, `costs.budgets.deleteBody`
+- `costs.openBudget`, `costs.overBudget`, `costs.agentsPaused`, `costs.budgetEvents`
+
+#### routines namespace (约30个key)
+- `routines.title`, `routines.subtitle`, `routines.createRoutine`, `routines.recentRuns`
+- `routines.sort`, `routines.sortUpdated`, `routines.sortCreated`, `routines.lastRun`, `routines.name`, `routines.asc`, `routines.desc`
+- `routines.group`, `routines.noProject`, `routines.unknownProject`, `routines.noAssignee`, `routines.unknownAgent`
+- `routines.newRoutine`, `routines.newRoutineDesc`, `routines.routineTitle`, `routines.for`, `routines.in`
+- `routines.searchAssignees`, `routines.noAssigneesFound`, `routines.searchProjects`, `routines.noProjectsFound`
+- `routines.addInstructions`, `routines.advancedSettings`, `routines.advancedSettingsDesc`
+- `routines.concurrency`, `routines.catchUp`, `routines.afterCreation`, `routines.creating`
+- `routines.routineCreated`, `routines.addFirstTrigger`, `routines.draftSaved`
+- `routines.failedToCreate`, `routines.failedToLoad`, `routines.failedToUpdate`, `routines.failedToUpdateBody`
+- `routines.runFailed`, `routines.runFailedBody`, `routines.agentRequired`, `routines.agentRequiredBody`
+- `routines.runNow`, `routines.restore`
+
+#### inbox namespace (约35个key)
+- `inbox.markAsRead`, `inbox.dismiss`, `inbox.retry`, `inbox.mine`, `inbox.recent`, `inbox.unread`, `inbox.all`
+- `inbox.searchPlaceholder`, `inbox.disableNesting`, `inbox.enableNesting`, `inbox.group`
+- `inbox.marking`, `inbox.markAllRead`, `inbox.markAllReadConfirm`, `inbox.markAllReadConfirmBody`
+- `inbox.category`, `inbox.approvalStatus`, `inbox.chooseColumns`
+- `inbox.noSearchResults`, `inbox.inboxZero`, `inbox.noNewItems`, `inbox.noRecentItems`, `inbox.noFilterResults`
+- `inbox.archived`, `inbox.otherResults`, `inbox.earlier`, `inbox.alerts`
+- `inbox.selectCompany`, `inbox.board`, `inbox.me`
+- `inbox.agentJoinRequest`, `inbox.humanJoinRequest`, `inbox.requestedBy`
+- `inbox.failedRun`
 
 ### 新增翻译 key
 

@@ -88,7 +88,7 @@ export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, en
         onClick={(e) => {
           // Don't navigate if the click was on a nested link (e.g. IssueReferencePill)
           const target = e.target as HTMLElement;
-          if (target.closest("a") && target.closest("a") !== e.currentTarget) return;
+          if (target.closest("a")) return;
           navigate(link);
         }}
         onKeyDown={(e) => {

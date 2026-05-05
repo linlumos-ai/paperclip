@@ -3,7 +3,7 @@
 > 审计日期: 2026-05-04
 > 更新日期: 2026-05-05 (浏览器验证完成)
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
-> 状态: **i18n ~99.5% 完成 ✅ 浏览器验证通过**
+> 状态: **i18n ~99.5% 完成 ✅ MCP 浏览器验证通过（11页面×2语言，0错误）**
 > 服务器: http://localhost:3107 ✅ v0.3.1 | UI: http://localhost:5173 ✅
 
 ---
@@ -607,4 +607,42 @@
 
 ---
 
-**报告完成 v3.0**
+## 十一、MCP 浏览器验证 (2026-05-05)
+
+### 全页面 Playwright 验证 ✅
+
+通过 Playwright MCP 浏览器自动化，对以下 11 个主要页面进行了中英文双语验证：
+
+| # | 页面 | 路由 | CN | EN | 控制台错误 |
+|---|------|------|----|----|-----------|
+| 1 | Dashboard | `/LIN/dashboard` | ✅ | ✅ | 0 |
+| 2 | Agents | `/LIN/agents` | ✅ | ✅ | 0 |
+| 3 | Agent Detail | `/LIN/agents/:id` | ✅ | ✅ | 0 |
+| 4 | Issues | `/LIN/issues` | ✅ | ✅ | 0 |
+| 5 | Issue Detail | `/LIN/issues/LIN-5` | ✅ | ✅ | 0 |
+| 6 | Costs | `/LIN/costs` | ✅ | ✅ | 0 |
+| 7 | Org Chart | `/LIN/org` | ✅ | ✅ | 0 |
+| 8 | Activity | `/LIN/activity` | ✅ | ✅ | 0 |
+| 9 | Goals | `/LIN/goals` | ✅ | ✅ | 0 |
+| 10 | Routines | `/LIN/routines` | ✅ | ✅ | 0 |
+| 11 | Projects | `/LIN/projects` | ✅ | ✅ | 0 |
+
+### Bug 修复记录 (2026-05-05)
+
+| # | 问题 | 文件 | 修复 | 提交 |
+|---|------|------|------|------|
+| 1 | Vite 代理端口错误导致 500 | `ui/vite.config.ts` | 3106→3107 | `785effd1` |
+| 2 | `<a>` 嵌套 `<a>` HTML 违规 | `ui/src/components/ActivityRow.tsx` | `<Link>` → `<div role="link">` + `useNavigate()` | `785effd1` |
+| 3 | WebSocket 连接拒绝 | `LiveUpdatesProvider.tsx` | 已有指数退避重连，无需修改 | - |
+
+### 验证确认
+
+- ✅ 所有 11 页面 CN/EN 切换流畅
+- ✅ 所有 11 页面 0 控制台错误
+- ✅ 语言按钮 (🌐) 侧栏可见
+- ✅ ActivityRow 点击导航正常（修复后已验证跳转至 `/LIN/issues/LIN-5`）
+- ✅ IssueReferencePill 内部链接正常工作
+
+---
+
+**报告完成 v3.1**

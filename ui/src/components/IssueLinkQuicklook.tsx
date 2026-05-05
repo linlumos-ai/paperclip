@@ -14,6 +14,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { StatusIcon } from "@/components/StatusIcon";
+import { useTranslation } from "@/locales/i18n";
 
 function summarizeIssueDescription(description: string | null | undefined) {
   if (!description) return null;
@@ -40,6 +41,10 @@ export function IssueQuicklookCard({
   compact?: boolean;
 }) {
   const description = useMemo(() => summarizeIssueDescription(issue.description), [issue.description]);
+  const { t } = useTranslation();
+  const statusText = t(`common.statuses.${issue.status}`) !== `common.statuses.${issue.status}`
+    ? t(`common.statuses.${issue.status}`)
+    : issue.status.replace(/_/g, " ");
 
   return (
     <div className={cn("space-y-2", compact && "space-y-1.5")}>
@@ -56,7 +61,7 @@ export function IssueQuicklookCard({
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="font-mono">{issue.identifier ?? issue.id.slice(0, 8)}</span>
         <span>&middot;</span>
-        <span>{issue.status.replace(/_/g, " ")}</span>
+        <span>{statusText}</span>
         <span>&middot;</span>
         <span>{timeAgo(new Date(issue.updatedAt))}</span>
       </div>

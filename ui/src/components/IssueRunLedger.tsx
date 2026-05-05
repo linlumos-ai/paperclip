@@ -16,6 +16,9 @@ import { cn, relativeTime } from "../lib/utils";
 import { queryKeys } from "../lib/queryKeys";
 import { keepPreviousDataForSameQueryTail } from "../lib/query-placeholder-data";
 import { describeRunRetryState } from "../lib/runRetryState";
+import { useTranslation } from "@/locales/i18n";
+
+type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
 
 type IssueRunLedgerProps = {
   issueId: string;
@@ -278,7 +281,12 @@ function mergeRuns(
   });
 }
 
-function statusLabel(status: string) {
+function statusLabel(status: string, t?: TranslateFn): string {
+  if (t) {
+    const key = `run.${status}`;
+    const translated = t(key);
+    if (translated !== key) return translated;
+  }
   return status.replace(/_/g, " ");
 }
 
@@ -286,12 +294,12 @@ function isActiveRun(run: Pick<LedgerRun, "status" | "isLive">) {
   return run.isLive || ACTIVE_RUN_STATUSES.has(run.status);
 }
 
-function runSummary(run: LedgerRun, agentMap: ReadonlyMap<string, Pick<Agent, "name">>) {
+function runSummary(run: LedgerRun, agentMap: ReadonlyMap<string, Pick<Agent, "name">>, t?: TranslateFn): string {
   const agentName = compactAgentName(run, agentMap);
-  if (run.status === "running") return `Running now by ${agentName}`;
-  if (run.status === "queued") return `Queued for ${agentName}`;
-  if (run.status === "scheduled_retry") return `Automatic retry scheduled for ${agentName}`;
-  return `${statusLabel(run.status)} by ${agentName}`;
+  if (run.status === "running") return t ? t("run.runningNowBy", { agent: agentName }) : `Running now by ${agentName}`;
+  if (run.status === "queued") return t ? t("run.queuedFor", { agent: agentName }) : `Queued for ${agentName}`;
+  if (run.status === "scheduled_retry") return t ? t("run.scheduledRetryFor", { agent: agentName }) : `Automatic retry scheduled for ${agentName}`;
+  return `${statusLabel(run.status, t)} ${t ? t("run.by") : "by"} ${agentName}`;
 }
 
 function livenessCopyForRun(run: LedgerRun) {
@@ -320,25 +328,25 @@ function stopReasonLabel(run: RunForIssue) {
   return timeoutText;
 }
 
-function stopStatusLabel(run: LedgerRun, stopReason: string | null) {
+function stopStatusLabel(run: LedgerRun, stopReason: string | null, t?: TranslateFn): string {
   if (stopReason) return stopReason;
-  if (run.status === "scheduled_retry") return "Retry pending";
-  if (run.status === "queued") return "Waiting to start";
-  if (run.status === "running") return "Still running";
-  if (!run.livenessState) return "Unavailable";
-  return "No stop reason";
+  if (run.status === "scheduled_retry") return t ? t("run.retryPending") : "Retry pending";
+  if (run.status === "queued") return t ? t("run.waitingToStart") : "Waiting to start";
+  if (run.status === "running") return t ? t("run.stillRunning") : "Still running";
+  if (!run.livenessState) return t ? t("run.unavailable") : "Unavailable";
+  return t ? t("run.noStopReason") : "No stop reason";
 }
 
-function lastUsefulActionLabel(run: LedgerRun) {
-  if (run.status === "scheduled_retry") return "Waiting for next attempt";
+function lastUsefulActionLabel(run: LedgerRun, t?: TranslateFn): string {
+  if (run.status === "scheduled_retry") return t ? t("run.waitingForNextAttempt") : "Waiting for next attempt";
   if (run.lastUsefulActionAt) return relativeTime(run.lastUsefulActionAt);
-  if (isActiveRun(run)) return "No action recorded yet";
+  if (isActiveRun(run)) return t ? t("run.noActionRecordedYet") : "No action recorded yet";
   if (run.livenessState === "plan_only" || run.livenessState === "needs_followup") {
-    return "No concrete action";
+    return t ? t("run.noConcreteAction") : "No concrete action";
   }
-  if (run.livenessState === "empty_response") return "No useful output";
-  if (!run.livenessState) return "Unavailable";
-  return "None recorded";
+  if (run.livenessState === "empty_response") return t ? t("run.noUsefulOutput") : "No useful output";
+  if (!run.livenessState) return t ? t("run.unavailable") : "Unavailable";
+  return t ? t("run.noneRecorded") : "None recorded";
 }
 
 function continuationLabel(run: LedgerRun) {
@@ -488,6 +496,7 @@ export function IssueRunLedgerContent({
   watchdogDecisionError,
   onWatchdogDecision,
 }: IssueRunLedgerContentProps) {
+  const { t } = useTranslation();
   const ledgerRuns = useMemo(() => mergeRuns(runs, liveRuns, activeRun), [activeRun, liveRuns, runs]);
   const latestRun = ledgerRuns[0] ?? null;
   const latestSilentRun = useMemo(
@@ -538,7 +547,7 @@ export function IssueRunLedgerContent({
           <h3 className="text-sm font-medium text-muted-foreground">Run ledger</h3>
           <p className="text-xs text-muted-foreground">
             {latestRun
-              ? runSummary(latestRun, agentMap)
+              ? runSummary(latestRun, agentMap, t)
               : issueStatus === "in_progress"
                 ? "Waiting for the first run record."
                 : "No runs linked yet."}
@@ -574,7 +583,7 @@ export function IssueRunLedgerContent({
                 >
                   <span className="shrink-0 font-mono text-muted-foreground">{child.identifier ?? child.id.slice(0, 8)}</span>
                   <span className="truncate">{child.title}</span>
-                  <span className="shrink-0 text-muted-foreground">{statusLabel(child.status)}</span>
+                  <span className="shrink-0 text-muted-foreground">{statusLabel(child.status, t)}</span>
                 </Link>
               ))}
               {children.active.length > 4 ? (
@@ -707,7 +716,7 @@ export function IssueRunLedgerContent({
                   </Link>
                   <span>by {agentName}</span>
                   <span className="rounded-md border border-border px-1.5 py-0.5 text-[11px] capitalize text-muted-foreground">
-                    {statusLabel(run.status)}
+                    {statusLabel(run.status, t)}
                   </span>
                   {run.isLive ? (
                     <span className="inline-flex items-center gap-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[11px] text-cyan-700 dark:text-cyan-300">
@@ -782,11 +791,11 @@ export function IssueRunLedgerContent({
                   </div>
                   <div className="min-w-0">
                     <span className="text-foreground">Last useful action</span>{" "}
-                    {lastUsefulActionLabel(run)}
+                    {lastUsefulActionLabel(run, t)}
                   </div>
                   <div className="min-w-0">
                     <span className="text-foreground">Stop</span>{" "}
-                    {stopStatusLabel(run, stopReason)}
+                    {stopStatusLabel(run, stopReason, t)}
                   </div>
                 </div>
 

@@ -203,6 +203,7 @@ function findCoTSegmentIndex(
 }
 
 function useLiveElapsed(startMs: number | null | undefined, active: boolean): string | null {
+  const { t } = useTranslation();
   const [, rerender] = useState(0);
   useEffect(() => {
     if (!active || !startMs) return;
@@ -210,7 +211,7 @@ function useLiveElapsed(startMs: number | null | undefined, active: boolean): st
     return () => clearInterval(interval);
   }, [active, startMs]);
   if (!active || !startMs) return null;
-  return formatDurationWords(Date.now() - startMs);
+  return formatDurationWords(Date.now() - startMs, t);
 }
 
 function useStableEvent<T extends (...args: never[]) => unknown>(callback: T | undefined): T | undefined {
@@ -663,7 +664,12 @@ export function resolveIssueChatHumanAuthor(args: {
   };
 }
 
-function formatRunStatusLabel(status: string) {
+function formatRunStatusLabel(status: string, t?: (key: string, params?: Record<string, string | number>) => string): string {
+  const key = `run.${status}`;
+  if (t) {
+    const translated = t(key);
+    if (translated !== key) return translated;
+  }
   switch (status) {
     case "timed_out":
       return "timed out";
@@ -767,7 +773,7 @@ function IssueChatChainOfThought({
     if (liveElapsed) headerSuffix = `${t("issues.chat.forDuration", { duration: liveElapsed })}`;
   } else if (segmentTiming) {
     const durationMs = segmentTiming.endMs - segmentTiming.startMs;
-    const durationText = formatDurationWords(durationMs);
+    const durationText = formatDurationWords(durationMs, t);
     headerVerb = t("issues.chat.worked");
     if (durationText) headerSuffix = `${t("issues.chat.forDuration", { duration: durationText })}`;
   } else {
@@ -2075,7 +2081,7 @@ function IssueChatSystemMessage({ message }: { message: ThreadMessage }) {
                 {runId.slice(0, 8)}
               </Link>
               <span className={cn("font-medium", runStatusClass(runStatus))}>
-                {formatRunStatusLabel(runStatus)}
+                {formatRunStatusLabel(runStatus, t)}
               </span>
               <a
                 href={anchorId ? `#${anchorId}` : undefined}
@@ -3220,6 +3226,7 @@ export function IssueChatThread({
         agentMap,
         currentUserId,
         userLabelMap,
+        t,
       }),
     [
       comments,

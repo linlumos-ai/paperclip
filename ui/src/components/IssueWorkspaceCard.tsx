@@ -10,6 +10,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { cn, projectWorkspaceUrl } from "../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Check, Copy, GitBranch, FolderOpen, Pencil, X } from "lucide-react";
+import { useTranslation } from "@/locales/i18n";
 
 /* -------------------------------------------------------------------------- */
 /*  Utility helpers (mirrored from IssueProperties for self-containment)      */
@@ -143,16 +144,20 @@ function workspaceDetailLink(input: {
   return input.workspace ? `/execution-workspaces/${input.workspace.id}` : null;
 }
 
-function statusBadge(status: string) {
+function StatusBadgeTranslated({ status }: { status: string }) {
+  const { t } = useTranslation();
   const colors: Record<string, string> = {
     active: "bg-green-500/15 text-green-700 dark:text-green-400",
     idle: "bg-muted text-muted-foreground",
     in_review: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
     archived: "bg-muted text-muted-foreground",
   };
+  const statusText = t(`common.statuses.${status}`) !== `common.statuses.${status}`
+    ? t(`common.statuses.${status}`)
+    : status.replace(/_/g, " ");
   return (
     <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium", colors[status] ?? colors.idle)}>
-      {status.replace(/_/g, " ")}
+      {statusText}
     </span>
   );
 }
@@ -377,7 +382,7 @@ export function IssueWorkspaceCard({
           {activeNonDefaultWorkspace && workspace
             ? workspaceModeLabel(workspace.mode)
             : configuredWorkspaceLabel(currentSelection, selectedReusableExecutionWorkspace)}
-          {workspace ? statusBadge(workspace.status) : statusBadge("idle")}
+          {workspace ? <StatusBadgeTranslated status={workspace.status} /> : <StatusBadgeTranslated status="idle" />}
         </div>
         <div className="flex items-center gap-1">
           {showEditingControls ? (

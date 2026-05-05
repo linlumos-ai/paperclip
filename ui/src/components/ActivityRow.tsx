@@ -31,7 +31,7 @@ interface ActivityRowProps {
 export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, entityTitleMap, className }: ActivityRowProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const verb = formatActivityVerb(event.action, event.details, { agentMap, userProfileMap });
+  const verb = formatActivityVerb(event.action, event.details, { agentMap, userProfileMap, t });
 
   const isHeartbeatEvent = event.entityType === "heartbeat_run";
   const heartbeatAgentId = isHeartbeatEvent

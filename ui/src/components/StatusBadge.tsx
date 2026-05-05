@@ -4,13 +4,11 @@ import { useTranslation } from "@/locales/i18n";
 
 export function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
-  
-  // Try to translate the status using a common pattern
-  const translatedStatus = t(`common.${status}`) !== `common.${status}` 
-    ? t(`common.${status}`)
-    : t(`agents.status.${status}`) !== `agents.status.${status}`
-      ? t(`agents.status.${status}`)
-      : status.replace(/_/g, " ");
+
+  // Try common.statuses first (covers all issue statuses), then fall back to title-cased raw value
+  const translatedStatus = t(`common.statuses.${status}`) !== `common.statuses.${status}`
+    ? t(`common.statuses.${status}`)
+    : status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <span

@@ -4,26 +4,16 @@ import { Link } from "../lib/router";
 import { cn } from "../lib/utils";
 import { createIssueDetailPath } from "../lib/issueDetailBreadcrumb";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-
-const TRIGGER_LABELS: Record<string, string> = {
-  no_comment_streak: "No-comment streak",
-  long_active_duration: "Long active duration",
-  high_churn: "High churn",
-};
-
-const REVIEW_STATUS_LABELS: Record<string, string> = {
-  todo: "Open",
-  in_progress: "In progress",
-  in_review: "In review",
-  blocked: "Blocked",
-  backlog: "Open",
-};
+import { useTranslation } from "@/locales/i18n";
 
 export function productivityReviewTriggerLabel(
   trigger: IssueProductivityReview["trigger"],
+  t?: (key: string, params?: Record<string, string | number>) => string,
 ): string {
-  if (!trigger) return "Productivity review";
-  return TRIGGER_LABELS[trigger] ?? "Productivity review";
+  if (!trigger) return t ? t("productivityReview.title") : "Productivity review";
+  const key = `productivityReview.triggers.${trigger}`;
+  const translated = t ? t(key) : key;
+  return translated !== key ? translated : "Productivity review";
 }
 
 export function ProductivityReviewBadge({
@@ -35,10 +25,13 @@ export function ProductivityReviewBadge({
   className?: string;
   hideLabel?: boolean;
 }) {
-  const label = productivityReviewTriggerLabel(review.trigger);
+  const { t } = useTranslation();
+  const label = productivityReviewTriggerLabel(review.trigger, t);
   const reviewIdentifier = review.reviewIdentifier ?? review.reviewIssueId.slice(0, 8);
   const reviewPath = createIssueDetailPath(review.reviewIdentifier ?? review.reviewIssueId);
-  const statusLabel = REVIEW_STATUS_LABELS[review.status] ?? review.status.replace(/_/g, " ");
+  const statusText = t(`common.statuses.${review.status}`) !== `common.statuses.${review.status}`
+    ? t(`common.statuses.${review.status}`)
+    : review.status.replace(/_/g, " ");
 
   return (
     <Tooltip>
@@ -49,26 +42,26 @@ export function ProductivityReviewBadge({
             "inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300 shrink-0 hover:bg-amber-500/20 transition-colors",
             className,
           )}
-          aria-label={`Under review · productivity review ${reviewIdentifier} (${label})`}
+          aria-label={t("productivityReview.ariaLabel", { identifier: reviewIdentifier, label })}
         >
           <Eye className="h-3 w-3" aria-hidden />
-          {hideLabel ? null : <span>Under review</span>}
+          {hideLabel ? null : <span>{t("productivityReview.underReview")}</span>}
         </Link>
       </TooltipTrigger>
       <TooltipContent>
         <div className="space-y-1 text-xs">
-          <div className="font-semibold">Productivity review open</div>
+          <div className="font-semibold">{t("productivityReview.openTitle")}</div>
           <div>
-            <span className="text-muted-foreground">Trigger:</span> {label}
+            <span className="text-muted-foreground">{t("productivityReview.trigger")}:</span> {label}
           </div>
           {typeof review.noCommentStreak === "number" && review.noCommentStreak > 0 ? (
             <div>
-              <span className="text-muted-foreground">No-comment streak:</span>{" "}
-              {review.noCommentStreak} runs
+              <span className="text-muted-foreground">{t("productivityReview.noCommentStreak")}:</span>{" "}
+              {t("productivityReview.runs", { count: review.noCommentStreak })}
             </div>
           ) : null}
           <div>
-            <span className="text-muted-foreground">Review:</span> {reviewIdentifier} ({statusLabel})
+            <span className="text-muted-foreground">{t("productivityReview.review")}:</span> {reviewIdentifier} ({statusText})
           </div>
         </div>
       </TooltipContent>

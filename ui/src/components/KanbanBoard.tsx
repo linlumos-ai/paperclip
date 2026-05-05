@@ -21,6 +21,7 @@ import { StatusIcon } from "./StatusIcon";
 import { PriorityIcon } from "./PriorityIcon";
 import { Identity } from "./Identity";
 import type { Issue } from "@paperclipai/shared";
+import { useTranslation } from "@/locales/i18n";
 
 const boardStatuses = [
   "backlog",
@@ -31,10 +32,6 @@ const boardStatuses = [
   "done",
   "cancelled",
 ];
-
-function statusLabel(status: string): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 interface Agent {
   id: string;
@@ -62,6 +59,10 @@ function KanbanColumn({
   liveIssueIds?: Set<string>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { t } = useTranslation();
+  const statusLabelText = t(`common.statuses.${status}`) !== `common.statuses.${status}`
+    ? t(`common.statuses.${status}`)
+    : status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   const isEmpty = issues.length === 0;
 
@@ -72,7 +73,7 @@ function KanbanColumn({
         {(!isEmpty || isOver) && (
           <>
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {statusLabel(status)}
+              {statusLabelText}
             </span>
             <span className="text-xs text-muted-foreground/60 ml-auto tabular-nums">
               {issues.length}

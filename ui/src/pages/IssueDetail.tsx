@@ -907,6 +907,7 @@ function IssueDetailActivityTab({
   onApprovalAction,
   handoffFocusSignal = 0,
 }: IssueDetailActivityTabProps) {
+  const { t } = useTranslation();
   const { data: activity, isLoading: activityLoading } = useQuery({
     queryKey: queryKeys.issues.activity(issueId),
     queryFn: () => activityApi.forIssue(issueId),
@@ -1062,7 +1063,7 @@ function IssueDetailActivityTab({
             <div className="space-y-1.5 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <ActorIdentity evt={evt} agentMap={agentMap} userProfileMap={userProfileMap} />
-                <span>{formatIssueActivityAction(evt.action, evt.details, { agentMap, userProfileMap, currentUserId })}</span>
+                <span>{formatIssueActivityAction(evt.action, evt.details, { agentMap, userProfileMap, currentUserId, t })}</span>
                 <span className="ml-auto shrink-0">{relativeTime(evt.createdAt)}</span>
               </div>
               <IssueReferenceActivitySummary event={evt} />

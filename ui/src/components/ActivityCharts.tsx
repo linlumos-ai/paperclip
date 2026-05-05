@@ -106,7 +106,7 @@ export function RunActivityChart(props: RunChartProps) {
           const total = entry.total;
           const heightPct = (total / maxValue) * 100;
           return (
-            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={`${day}: ${total} runs`}>
+            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={t("charts.tooltip.runs", { date: day, count: total })}>
               {total > 0 ? (
                 <div className="flex flex-col-reverse gap-px overflow-hidden" style={{ height: `${heightPct}%`, minHeight: 2 }}>
                   {entry.succeeded > 0 && <div className="bg-emerald-500" style={{ flex: entry.succeeded }} />}
@@ -159,7 +159,7 @@ export function PriorityChart({ issues }: { issues: { priority: string; createdA
           const total = Object.values(entry).reduce((a, b) => a + b, 0);
           const heightPct = (total / maxValue) * 100;
           return (
-            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={`${day}: ${total} issues`}>
+            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={t("charts.tooltip.issues", { date: day, count: total })}>
               {total > 0 ? (
                 <div className="flex flex-col-reverse gap-px overflow-hidden" style={{ height: `${heightPct}%`, minHeight: 2 }}>
                   {priorityOrder.map(p => entry[p] > 0 ? (
@@ -174,7 +174,7 @@ export function PriorityChart({ issues }: { issues: { priority: string; createdA
         })}
       </div>
       <DateLabels days={days} />
-      <ChartLegend items={priorityOrder.map(p => ({ color: priorityColors[p], label: p.charAt(0).toUpperCase() + p.slice(1) }))} />
+      <ChartLegend items={priorityOrder.map(p => ({ color: priorityColors[p], label: t(`charts.priority.${p}`) ?? p }))} />
     </div>
   );
 }
@@ -189,15 +189,17 @@ const statusColors: Record<string, string> = {
   backlog: "#64748b",
 };
 
-const statusLabels: Record<string, string> = {
-  todo: "To Do",
-  in_progress: "In Progress",
-  in_review: "In Review",
-  done: "Done",
-  blocked: "Blocked",
-  cancelled: "Cancelled",
-  backlog: "Backlog",
-};
+function getStatusLabels(t: (key: string) => string): Record<string, string> {
+  return {
+    todo: t("charts.status.todo"),
+    in_progress: t("charts.status.in_progress"),
+    in_review: t("charts.status.in_review"),
+    done: t("charts.status.done"),
+    blocked: t("charts.status.blocked"),
+    cancelled: t("charts.status.cancelled"),
+    backlog: t("charts.status.backlog"),
+  };
+}
 
 export function IssueStatusChart({ issues }: { issues: { status: string; createdAt: Date }[] }) {
   const { t } = useTranslation();
@@ -227,7 +229,7 @@ export function IssueStatusChart({ issues }: { issues: { status: string; created
           const total = Object.values(entry).reduce((a, b) => a + b, 0);
           const heightPct = (total / maxValue) * 100;
           return (
-            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={`${day}: ${total} issues`}>
+            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={t("charts.tooltip.issues", { date: day, count: total })}>
               {total > 0 ? (
                 <div className="flex flex-col-reverse gap-px overflow-hidden" style={{ height: `${heightPct}%`, minHeight: 2 }}>
                   {statusOrder.map(s => (entry[s] ?? 0) > 0 ? (
@@ -242,7 +244,7 @@ export function IssueStatusChart({ issues }: { issues: { status: string; created
         })}
       </div>
       <DateLabels days={days} />
-      <ChartLegend items={statusOrder.map(s => ({ color: statusColors[s] ?? "#6b7280", label: statusLabels[s] ?? s }))} />
+      <ChartLegend items={statusOrder.map(s => ({ color: statusColors[s] ?? "#6b7280", label: getStatusLabels(t)[s] ?? s }))} />
     </div>
   );
 }
@@ -264,7 +266,7 @@ export function SuccessRateChart(props: RunChartProps) {
           const rate = entry.total > 0 ? entry.succeeded / entry.total : 0;
           const color = entry.total === 0 ? undefined : rate >= 0.8 ? "#10b981" : rate >= 0.5 ? "#eab308" : "#ef4444";
           return (
-            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={`${day}: ${entry.total > 0 ? Math.round(rate * 100) : 0}% (${entry.succeeded}/${entry.total})`}>
+            <div key={day} className="flex-1 h-full flex flex-col justify-end" title={t("charts.tooltip.successRate", { date: day, percent: entry.total > 0 ? Math.round(rate * 100) : 0, succeeded: entry.succeeded, total: entry.total })}>
               {entry.total > 0 ? (
                 <div style={{ height: `${rate * 100}%`, minHeight: 2, backgroundColor: color }} />
               ) : (

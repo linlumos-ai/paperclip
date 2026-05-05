@@ -1,9 +1,10 @@
-# Paperclip i18n 审计报告 v5.0
+# Paperclip i18n 审计报告 v5.1
 
 > 审计日期: 2026-05-04
-> 更新日期: 2026-05-05 (v5.0 最终完成: MarkdownBody + CommentThread + 浏览器验证)
+> 更新日期: 2026-05-05 (v5.1 最终完成: Git Rebase 完成 + 远程推送)
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
 > 状态: **i18n 100% 完成 ✅ MCP 浏览器验证通过（完整 CN/EN 切换）**
+> Git: feat/i18n-cn-en-switching ✅ 与 origin/feat/i18n-cn-en-switching 同步 (b72f2f11)
 > 服务器: http://localhost:3107 ✅ v0.3.1 | UI: http://localhost:5173 ✅
 
 ---
@@ -874,12 +875,14 @@ $ npx tsc --noEmit
 
 ### 最终结论
 
-- ✅ 所有组件 100% 完成 i18n
+- ✅ 所有组件 100% 完成 i18n (2876 keys, 107 namespaces)
 - ✅ TypeScript 编译 0 错误
 - ✅ 浏览器验证 11+ 页面通过
 - ✅ 中英文切换即时响应
+- ✅ LocaleSwitcher 中英切换按钮已集成
+- ✅ Git Rebase 完成，与 origin/master 同步
 - ✅ 0 控制台错误
 
 ---
 
-**报告完成 v5.0 🎉 100% 完成**
+**报告完成 v5.1 🎉 100% 完成 | Git 分支已同步**

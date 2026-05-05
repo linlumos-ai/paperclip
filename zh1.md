@@ -643,6 +643,24 @@
 - ✅ ActivityRow 点击导航正常（修复后已验证跳转至 `/LIN/issues/LIN-5`）
 - ✅ IssueReferencePill 内部链接正常工作
 
+### 重新验证 (2026-05-05 第二轮)
+
+> 独立 Playwright MCP 会话二次验证，结果完全一致：
+
+| 页面 | 中文标题 | 控制台错误 |
+|------|----------|-----------|
+| Dashboard | 仪表板 · Paperclip | 0 |
+| Issues | 任务 · Paperclip | 0 |
+| Agents | 智能体 · Paperclip | 0 |
+| Costs | 成本 · Paperclip | 0 |
+| Org Chart | 组织架构 · Paperclip | 0 |
+| Activity | 活动 · Paperclip | 0 |
+| Goals | 目标 · Paperclip | 0 |
+| Routines | 定时任务 · Paperclip | 0 |
+| Issue Detail (LIN-2) | 制定 Rust 沙箱技术架构方案 · Issues · Paperclip | 0 |
+
+语言切换验证：English → 中文 → English，所有文本即时切换，0 错误。
+
 ---
 
-**报告完成 v3.1**
+**报告完成 v3.2**

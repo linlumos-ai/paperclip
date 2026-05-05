@@ -1,4 +1,4 @@
-import { Link } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import { Identity } from "./Identity";
 import { IssueReferenceActivitySummary } from "./IssueReferenceActivitySummary";
 import { timeAgo } from "../lib/timeAgo";
@@ -30,6 +30,7 @@ interface ActivityRowProps {
 
 export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, entityTitleMap, className }: ActivityRowProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const verb = formatActivityVerb(event.action, event.details, { agentMap, userProfileMap });
 
   const isHeartbeatEvent = event.entityType === "heartbeat_run";
@@ -80,9 +81,25 @@ export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, en
 
   if (link) {
     return (
-      <Link to={link} className={cn(classes, "no-underline text-inherit block")}>
+      <div
+        role="link"
+        tabIndex={0}
+        className={cn(classes, "text-inherit block")}
+        onClick={(e) => {
+          // Don't navigate if the click was on a nested link (e.g. IssueReferencePill)
+          const target = e.target as HTMLElement;
+          if (target.closest("a") && target.closest("a") !== e.currentTarget) return;
+          navigate(link);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate(link);
+          }
+        }}
+      >
         {inner}
-      </Link>
+      </div>
     );
   }
 

@@ -1,7 +1,7 @@
 # Paperclip i18n 审计报告 v3.0
 
 > 审计日期: 2026-05-04
-> 更新日期: 2026-05-05 (浏览器验证完成)
+> 更新日期: 2026-05-05 (浏览器验证 + TypeScript 修复完成)
 > 审计范围: ui/src/pages/*.tsx, ui/src/components/*.tsx, ui/src/locales/
 > 状态: **i18n ~99.5% 完成 ✅ MCP 浏览器验证通过（11页面×2语言，0错误）**
 > 服务器: http://localhost:3107 ✅ v0.3.1 | UI: http://localhost:5173 ✅
@@ -634,6 +634,7 @@
 | 1 | Vite 代理端口错误导致 500 | `ui/vite.config.ts` | 3106→3107 | `785effd1` |
 | 2 | `<a>` 嵌套 `<a>` HTML 违规 | `ui/src/components/ActivityRow.tsx` | `<Link>` → `<div role="link">` + `useNavigate()` | `785effd1` |
 | 3 | WebSocket 连接拒绝 | `LiveUpdatesProvider.tsx` | 已有指数退避重连，无需修改 | - |
+| 4 | TypeScript TS2367 类型比较错误 | `ui/src/components/ActivityRow.tsx` | 简化 `closest("a")` 检查，移除不必要的类型不兼容比较 | `bb398d5d` |
 
 ### 验证确认
 
@@ -642,6 +643,8 @@
 - ✅ 语言按钮 (🌐) 侧栏可见
 - ✅ ActivityRow 点击导航正常（修复后已验证跳转至 `/LIN/issues/LIN-5`）
 - ✅ IssueReferencePill 内部链接正常工作
+- ✅ TypeScript 编译 0 错误 (`tsc --noEmit` 通过)
+- ✅ ActivityRow 点击导航正常（修复 TS2367 后重新验证跳转至 `/LIN/issues/LIN-2`）
 
 ### 重新验证 (2026-05-05 第二轮)
 
@@ -661,6 +664,13 @@
 
 语言切换验证：English → 中文 → English，所有文本即时切换，0 错误。
 
+### TypeScript 编译验证
+
+```
+$ npx tsc --noEmit
+(无输出 = 0 错误)
+```
+
 ---
 
-**报告完成 v3.2**
+**报告完成 v3.3**

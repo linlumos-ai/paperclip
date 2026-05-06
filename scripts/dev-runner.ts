@@ -38,6 +38,18 @@ const changedPathSampleLimit = 5;
 const devServerStatusFilePath = path.join(repoRoot, ".paperclip", "dev-server-status.json");
 const devServerStatusToken = mode === "dev" ? randomUUID() : null;
 const devServerStatusTokenHeader = "x-paperclip-dev-server-status-token";
+const pluginSdkBuildInputPaths = [
+  "packages/shared/src",
+  "packages/shared/package.json",
+  "packages/shared/tsconfig.json",
+  "packages/plugins/sdk/src",
+  "packages/plugins/sdk/package.json",
+  "packages/plugins/sdk/tsconfig.json",
+].map((relativePath) => path.join(repoRoot, relativePath));
+const pluginSdkBuildOutputPaths = [
+  "packages/shared/dist/index.js",
+  "packages/plugins/sdk/dist/index.js",
+].map((relativePath) => path.join(repoRoot, relativePath));
 
 const watchedDirectories = [
   "cli",
@@ -514,6 +526,13 @@ async function maybePreflightMigrations(options: { interactive?: boolean; autoAp
 }
 
 async function buildPluginSdk() {
+  const buildCheck = shouldBuildPluginSdk();
+  if (!buildCheck.needsBuild) {
+    console.log("[paperclip] plugin sdk build skipped (up-to-date)");
+    return;
+  }
+
+  console.log(`[paperclip] plugin sdk build required: ${buildCheck.reason}`);
   console.log("[paperclip] building plugin sdk...");
   const result = await runPnpm(
     ["--filter", "@paperclipai/plugin-sdk", "build"],
@@ -529,12 +548,67 @@ async function buildPluginSdk() {
   }
 }
 
+function newestMtimeForPath(absolutePath: string): number {
+  if (!existsSync(absolutePath)) {
+    return 0;
+  }
+
+  const stats = statSync(absolutePath);
+  if (!stats.isDirectory()) {
+    return stats.mtimeMs;
+  }
+
+  let newestMtime = stats.mtimeMs;
+  const entries = readdirSync(absolutePath);
+  for (const entry of entries) {
+    if (ignoredDirectoryNames.has(entry)) {
+      continue;
+    }
+    const entryPath = path.join(absolutePath, entry);
+    const entryMtime = newestMtimeForPath(entryPath);
+    if (entryMtime > newestMtime) {
+      newestMtime = entryMtime;
+    }
+  }
+
+  return newestMtime;
+}
+
+function shouldBuildPluginSdk(): { needsBuild: boolean; reason: string } {
+  for (const outputPath of pluginSdkBuildOutputPaths) {
+    if (!existsSync(outputPath)) {
+      return {
+        needsBuild: true,
+        reason: `missing output ${path.relative(repoRoot, outputPath)}`,
+      };
+    }
+  }
+
+  const newestInputMtime = pluginSdkBuildInputPaths.reduce((maxMtime, inputPath) => {
+    const mtime = newestMtimeForPath(inputPath);
+    return mtime > maxMtime ? mtime : maxMtime;
+  }, 0);
+
+  const oldestOutputMtime = pluginSdkBuildOutputPaths.reduce((minMtime, outputPath) => {
+    const outputMtime = statSync(outputPath).mtimeMs;
+    return outputMtime < minMtime ? outputMtime : minMtime;
+  }, Number.POSITIVE_INFINITY);
+
+  if (newestInputMtime > oldestOutputMtime) {
+    return {
+      needsBuild: true,
+      reason: "shared/plugin-sdk sources are newer than dist outputs",
+    };
+  }
+
+  return { needsBuild: false, reason: "up-to-date" };
+}
+
 async function markChildAsCurrent() {
   previousSnapshot = collectWatchedSnapshot();
   dirtyPaths = new Set();
   lastChangedAt = null;
   lastRestartAt = new Date().toISOString();
-  await refreshPendingMigrations();
   await updateDevServiceRecord();
 }
 

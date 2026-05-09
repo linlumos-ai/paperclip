@@ -18,7 +18,9 @@ import { WorktreeBanner } from "./WorktreeBanner";
 import { DevRestartBanner } from "./DevRestartBanner";
 import { ResizableSidebarPane } from "./ResizableSidebarPane";
 import { SidebarAccountMenu } from "./SidebarAccountMenu";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useDialogActions } from "../context/DialogContext";
+import { useTranslation } from "@/locales/i18n";
 import { GeneralSettingsProvider } from "../context/GeneralSettingsContext";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
@@ -62,6 +64,7 @@ function readRememberedInstanceSettingsPath(): string {
 }
 
 export function Layout() {
+  const { t } = useTranslation();
   const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile } = useSidebar();
   const { openNewIssue, openOnboarding } = useDialogActions();
   const { togglePanelVisible } = usePanel();
@@ -355,7 +358,7 @@ export function Layout() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        Skip to Main Content
+        {t("common.skipToMainContent")}
       </a>
       <WorktreeBanner />
       <DevRestartBanner devServer={health?.devServer} />
@@ -365,7 +368,7 @@ export function Layout() {
             type="button"
             className="fixed inset-0 z-40 bg-black/50"
             onClick={() => setSidebarOpen(false)}
-            aria-label="Close sidebar"
+            aria-label={t("common.close")}
           />
         )}
 
@@ -405,6 +408,9 @@ export function Layout() {
                   companySidebar
                 )}
               </ResizableSidebarPane>
+            </div>
+            <div className="flex items-center justify-between px-3 py-1.5 border-t border-border shrink-0">
+              <LanguageSwitcher />
             </div>
             <SidebarAccountMenu
               deploymentMode={health?.deploymentMode}

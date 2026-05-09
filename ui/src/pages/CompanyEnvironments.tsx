@@ -13,7 +13,8 @@ import { instanceSettingsApi } from "@/api/instanceSettings";
 import { secretsApi } from "@/api/secrets";
 import { Button } from "@/components/ui/button";
 import { JsonSchemaForm, getDefaultValues, validateJsonSchemaForm } from "@/components/JsonSchemaForm";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useTranslation } from "@/locales/i18n";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/queryKeys";
@@ -161,6 +162,7 @@ function SupportMark({ supported }: { supported: boolean }) {
 export function CompanyEnvironments() {
   const { selectedCompany, selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const { t } = useTranslation();
   const { pushToast } = useToast();
   const queryClient = useQueryClient();
   const [editingEnvironmentId, setEditingEnvironmentId] = useState<string | null>(null);
@@ -169,9 +171,9 @@ export function CompanyEnvironments() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: selectedCompany?.name ?? "Company", href: "/dashboard" },
-      { label: "Settings", href: "/company/settings" },
-      { label: "Environments" },
+      { label: selectedCompany?.name ?? t("company.company"), href: "/dashboard" },
+      { label: t("common.settings"), href: "/company/settings" },
+      { label: t("company.environments") },
     ]);
   }, [selectedCompany?.name, setBreadcrumbs]);
 

@@ -4,12 +4,9 @@ import { cn } from "../lib/utils";
 import { issueStatusIcon, issueStatusIconDefault } from "../lib/status-colors";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/locales/i18n";
 
 const allStatuses = ["backlog", "todo", "in_progress", "in_review", "done", "cancelled", "blocked"];
-
-function statusLabel(status: string): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 interface StatusIconProps {
   status: string;
@@ -19,7 +16,11 @@ interface StatusIconProps {
   showLabel?: boolean;
 }
 
-function blockedAttentionLabel(blockerAttention: IssueBlockerAttention | null | undefined) {
+function statusLabelFallback(status: string): string {
+  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function blockedAttentionLabel(t: (key: string, params?: Record<string, string | number>) => string, blockerAttention: IssueBlockerAttention | null | undefined) {
   if (!blockerAttention || blockerAttention.state === "none") return "Blocked";
 
   if (blockerAttention.reason === "active_child") {
@@ -62,7 +63,15 @@ function blockedAttentionLabel(blockerAttention: IssueBlockerAttention | null | 
 }
 
 export function StatusIcon({ status, blockerAttention, onChange, className, showLabel }: StatusIconProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+
+  function statusLabel(s: string): string {
+    const key = `common.statuses.${s}`;
+    const translated = t(key);
+    return translated !== key ? translated : statusLabelFallback(s);
+  }
+
   const isCoveredBlocked = status === "blocked" && blockerAttention?.state === "covered";
   const isStalledBlocked = status === "blocked" && blockerAttention?.state === "stalled";
   const isAttentionBlocked = status === "blocked" && blockerAttention?.state === "needs_attention";
@@ -73,7 +82,7 @@ export function StatusIcon({ status, blockerAttention, onChange, className, show
       ? "text-amber-600 border-amber-600 dark:text-amber-400 dark:border-amber-400"
       : issueStatusIcon[status] ?? issueStatusIconDefault;
   const isDone = status === "done";
-  const ariaLabel = status === "blocked" ? blockedAttentionLabel(blockerAttention) : statusLabel(status);
+  const ariaLabel = status === "blocked" ? blockedAttentionLabel(t, blockerAttention) : statusLabel(status);
   const blockerAttentionState = isCoveredBlocked
     ? "covered"
     : isStalledBlocked

@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { StatusIcon } from "./StatusIcon";
+import { useTranslation } from "@/locales/i18n";
 import { PriorityIcon } from "./PriorityIcon";
 import { Identity } from "./Identity";
 import type { Issue } from "@paperclipai/shared";
@@ -205,6 +206,7 @@ export function KanbanBoard({
   liveIssueIds,
   onUpdateIssue,
 }: KanbanBoardProps) {
+  const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(

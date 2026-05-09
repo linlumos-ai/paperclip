@@ -7,7 +7,8 @@
   <a href="https://paperclip.ing/docs"><strong>Docs</strong></a> &middot;
   <a href="https://github.com/paperclipai/paperclip"><strong>GitHub</strong></a> &middot;
   <a href="https://discord.gg/m4HZY7xNG3"><strong>Discord</strong></a> &middot;
-  <a href="https://x.com/papercliping"><strong>Twitter</strong></a>
+  <a href="https://x.com/papercliping"><strong>Twitter</strong></a> &middot;
+  <a href="README.zh-CN.md"><strong>中文</strong></a>
 </p>
 
 <p align="center">

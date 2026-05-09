@@ -1,12 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { Identity } from "./Identity";
+import { Link } from "@/lib/router";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { deriveInitials } from "./Identity";
 import { IssueReferenceActivitySummary } from "./IssueReferenceActivitySummary";
 import { timeAgo } from "../lib/timeAgo";
 import { cn } from "../lib/utils";
 import { formatActivityVerb } from "../lib/activity-format";
 import { deriveProjectUrlKey, type ActivityEvent, type Agent } from "@paperclipai/shared";
 import type { CompanyUserProfile } from "../lib/company-members";
-import { useTranslation } from "@/locales/i18n";
 
 function entityLink(entityType: string, entityId: string, name?: string | null): string | null {
   switch (entityType) {
@@ -29,9 +29,7 @@ interface ActivityRowProps {
 }
 
 export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, entityTitleMap, className }: ActivityRowProps) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const verb = formatActivityVerb(event.action, event.details, { agentMap, userProfileMap, t });
+  const verb = formatActivityVerb(event.action, event.details, { agentMap, userProfileMap });
 
   const isHeartbeatEvent = event.entityType === "heartbeat_run";
   const heartbeatAgentId = isHeartbeatEvent
@@ -50,24 +48,25 @@ export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, en
 
   const actor = event.actorType === "agent" ? agentMap.get(event.actorId) : null;
   const userProfile = event.actorType === "user" ? userProfileMap?.get(event.actorId) : null;
-  const actorName = actor?.name ?? (event.actorType === "system" ? t("activity.row.system") : userProfile?.label ?? (event.actorType === "user" ? t("activity.row.board") : event.actorId || t("activity.row.unknown")));
+  const actorName = actor?.name ?? (event.actorType === "system" ? "System" : userProfile?.label ?? (event.actorType === "user" ? "Board" : event.actorId || "Unknown"));
   const actorAvatarUrl = userProfile?.image ?? null;
 
   const inner = (
     <div className="space-y-2">
-      <div className="flex gap-3">
-        <p className="flex-1 min-w-0 truncate">
-          <Identity
-            name={actorName}
-            avatarUrl={actorAvatarUrl}
-            size="xs"
-            className="align-middle"
-          />
-          <span className="text-muted-foreground ml-1">{verb} </span>
-          {name && <span className="font-medium">{name}</span>}
-          {entityTitle && <span className="text-muted-foreground ml-1">— {entityTitle}</span>}
-        </p>
-        <span className="text-xs text-muted-foreground shrink-0 pt-0.5">{timeAgo(event.createdAt)}</span>
+      <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Avatar size="xs">
+            {actorAvatarUrl && <AvatarImage src={actorAvatarUrl} alt={actorName} />}
+            <AvatarFallback>{deriveInitials(actorName)}</AvatarFallback>
+          </Avatar>
+          <p className="min-w-0 flex-1 truncate">
+            <span>{actorName}</span>
+            <span className="text-muted-foreground"> {verb} </span>
+            {name && <span className="font-medium">{name}</span>}
+            {entityTitle && <span className="text-muted-foreground"> — {entityTitle}</span>}
+          </p>
+        </div>
+        <span className="text-xs text-muted-foreground shrink-0">{timeAgo(event.createdAt)}</span>
       </div>
       <IssueReferenceActivitySummary event={event} />
     </div>
@@ -81,25 +80,9 @@ export function ActivityRow({ event, agentMap, userProfileMap, entityNameMap, en
 
   if (link) {
     return (
-      <div
-        role="link"
-        tabIndex={0}
-        className={cn(classes, "text-inherit block")}
-        onClick={(e) => {
-          // Don't navigate if the click was on a nested link (e.g. IssueReferencePill)
-          const target = e.target as HTMLElement;
-          if (target.closest("a")) return;
-          navigate(link);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            navigate(link);
-          }
-        }}
-      >
+      <Link to={link} className={cn(classes, "no-underline text-inherit block")}>
         {inner}
-      </div>
+      </Link>
     );
   }
 

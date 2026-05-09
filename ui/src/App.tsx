@@ -13,6 +13,7 @@ import { ProjectDetail } from "./pages/ProjectDetail";
 import { ProjectWorkspaceDetail } from "./pages/ProjectWorkspaceDetail";
 import { Workspaces } from "./pages/Workspaces";
 import { Issues } from "./pages/Issues";
+import { Search } from "./pages/Search";
 import { IssueDetail } from "./pages/IssueDetail";
 import { IssueChatLongThreadPerf } from "./pages/IssueChatLongThreadPerf";
 import { Routines } from "./pages/Routines";
@@ -55,7 +56,6 @@ import { useCompany } from "./context/CompanyContext";
 import { useDialogActions } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
 import { shouldRedirectCompanylessRouteToOnboarding } from "./lib/onboarding-route";
-import { useTranslation } from "./locales/i18n";
 
 function boardRoutes() {
   return (
@@ -96,6 +96,7 @@ function boardRoutes() {
       <Route path="projects/:projectId/budget" element={<ProjectDetail />} />
       <Route path="workspaces" element={<Workspaces />} />
       <Route path="issues" element={<Issues />} />
+      <Route path="search" element={<Search />} />
       <Route path="issues/all" element={<Navigate to="/issues" replace />} />
       <Route path="issues/active" element={<Navigate to="/issues" replace />} />
       <Route path="issues/backlog" element={<Navigate to="/issues" replace />} />
@@ -108,6 +109,7 @@ function boardRoutes() {
       <Route path="routines" element={<Routines />} />
       <Route path="routines/:routineId" element={<RoutineDetail />} />
       <Route path="execution-workspaces/:workspaceId" element={<ExecutionWorkspaceDetail />} />
+      <Route path="execution-workspaces/:workspaceId/services" element={<ExecutionWorkspaceDetail />} />
       <Route path="execution-workspaces/:workspaceId/configuration" element={<ExecutionWorkspaceDetail />} />
       <Route path="execution-workspaces/:workspaceId/runtime-logs" element={<ExecutionWorkspaceDetail />} />
       <Route path="execution-workspaces/:workspaceId/issues" element={<ExecutionWorkspaceDetail />} />
@@ -130,7 +132,7 @@ function boardRoutes() {
       <Route path="u/:userSlug" element={<UserProfile />} />
       <Route path="design-guide" element={<DesignGuide />} />
       <Route path="instance/settings/adapters" element={<AdapterManager />} />
-      <Route path=":pluginRoutePath" element={<PluginPage />} />
+      <Route path=":pluginRoutePath/*" element={<PluginPage />} />
       <Route path="*" element={<NotFoundPage scope="board" />} />
     </>
   );
@@ -148,22 +150,21 @@ function LegacySettingsRedirect() {
 function OnboardingRoutePage() {
   const { companies } = useCompany();
   const { openOnboarding } = useDialogActions();
-  const { t } = useTranslation();
   const { companyPrefix } = useParams<{ companyPrefix?: string }>();
   const matchedCompany = companyPrefix
     ? companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null
     : null;
 
   const title = matchedCompany
-    ? t("onboarding.addAgent", { name: matchedCompany.name })
+    ? `Add another agent to ${matchedCompany.name}`
     : companies.length > 0
-      ? t("onboarding.createAnother")
-      : t("onboarding.createCompany");
+      ? "Create another company"
+      : "Create your first company";
   const description = matchedCompany
     ? "Run onboarding again to add an agent and a starter task for this company."
     : companies.length > 0
       ? "Run onboarding again to create another company and seed its first agent."
-      : t("onboarding.getStarted");
+      : "Get started by creating a company and your first agent.";
 
   return (
     <div className="mx-auto max-w-xl py-10">
@@ -178,7 +179,7 @@ function OnboardingRoutePage() {
                 : openOnboarding()
             }
           >
-            {matchedCompany ? t("onboarding.addAgentButton") : t("onboarding.startOnboarding")}
+            {matchedCompany ? "Add Agent" : "Start Onboarding"}
           </Button>
         </div>
       </div>
@@ -189,10 +190,9 @@ function OnboardingRoutePage() {
 function CompanyRootRedirect() {
   const { companies, selectedCompany, loading } = useCompany();
   const location = useLocation();
-  const { t } = useTranslation();
 
   if (loading) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">{t("common.loading")}</div>;
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
   }
 
   const targetCompany = selectedCompany ?? companies[0] ?? null;
@@ -214,10 +214,9 @@ function CompanyRootRedirect() {
 function UnprefixedBoardRedirect() {
   const location = useLocation();
   const { companies, selectedCompany, loading } = useCompany();
-  const { t } = useTranslation();
 
   if (loading) {
-    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">{t("common.loading")}</div>;
+    return <div className="mx-auto max-w-xl py-10 text-sm text-muted-foreground">Loading...</div>;
   }
 
   const targetCompany = selectedCompany ?? companies[0] ?? null;
@@ -243,17 +242,16 @@ function UnprefixedBoardRedirect() {
 
 function NoCompaniesStartPage() {
   const { openOnboarding } = useDialogActions();
-  const { t } = useTranslation();
 
   return (
     <div className="mx-auto max-w-xl py-10">
       <div className="rounded-lg border border-border bg-card p-6">
-        <h1 className="text-xl font-semibold">{t("onboarding.createCompany")}</h1>
+        <h1 className="text-xl font-semibold">Create your first company</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {t("onboarding.getStarted")}
+          Get started by creating a company.
         </p>
         <div className="mt-4">
-          <Button onClick={() => openOnboarding()}>{t("onboarding.newCompany")}</Button>
+          <Button onClick={() => openOnboarding()}>New Company</Button>
         </div>
       </div>
     </div>
@@ -309,6 +307,7 @@ export function App() {
           <Route path="projects/:projectId/configuration" element={<UnprefixedBoardRedirect />} />
           <Route path="workspaces" element={<UnprefixedBoardRedirect />} />
           <Route path="execution-workspaces/:workspaceId" element={<UnprefixedBoardRedirect />} />
+          <Route path="execution-workspaces/:workspaceId/services" element={<UnprefixedBoardRedirect />} />
           <Route path="execution-workspaces/:workspaceId/configuration" element={<UnprefixedBoardRedirect />} />
           <Route path="execution-workspaces/:workspaceId/runtime-logs" element={<UnprefixedBoardRedirect />} />
           <Route path="execution-workspaces/:workspaceId/issues" element={<UnprefixedBoardRedirect />} />

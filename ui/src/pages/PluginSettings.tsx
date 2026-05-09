@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Puzzle, ArrowLeft, ShieldAlert, ActivitySquare, CheckCircle, XCircle, Loader2, Clock, Cpu, Webhook, CalendarClock, AlertTriangle } from "lucide-react";
+import { Puzzle, ArrowLeft, ShieldAlert, ActivitySquare, CheckCircle, XCircle, Loader2, Clock, Cpu, Webhook, CalendarClock, AlertTriangle, FolderOpen, Save } from "lucide-react";
+import type { PluginLocalFolderDeclaration } from "@paperclipai/shared";
 import { useCompany } from "@/context/CompanyContext";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { useTranslation } from "@/locales/i18n";
 import { Link, Navigate, useParams } from "@/lib/router";
 import { PluginSlotMount, usePluginSlots } from "@/plugins/slots";
-import { pluginsApi } from "@/api/plugins";
+import { pluginsApi, type PluginLocalFolderStatus } from "@/api/plugins";
 import { queryKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ChoosePathButton } from "@/components/PathInstructionsModal";
 import {
   Card,
   CardContent,
@@ -59,7 +60,6 @@ import {
  * @see doc/plugins/PLUGIN_SPEC.md §19.8 — Plugin Settings UI.
  */
 export function PluginSettings() {
-  const { t } = useTranslation();
   const { selectedCompany, selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const { companyPrefix, pluginId } = useParams<{ companyPrefix?: string; pluginId: string }>();
@@ -116,10 +116,10 @@ export function PluginSettings() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: selectedCompany?.name ?? t("plugins.company"), href: "/dashboard" },
-      { label: t("nav.settings"), href: "/instance/settings/heartbeats" },
-      { label: t("instance.plugins"), href: "/instance/settings/plugins" },
-      { label: plugin?.manifestJson?.displayName ?? plugin?.packageName ?? t("plugins.pluginDetails") },
+      { label: selectedCompany?.name ?? "Company", href: "/dashboard" },
+      { label: "Settings", href: "/instance/settings/heartbeats" },
+      { label: "Plugins", href: "/instance/settings/plugins" },
+      { label: plugin?.manifestJson?.displayName ?? plugin?.packageName ?? "Plugin Details" },
     ]);
   }, [selectedCompany?.name, setBreadcrumbs, companyPrefix, plugin]);
 
@@ -128,7 +128,7 @@ export function PluginSettings() {
   }, [pluginId]);
 
   if (pluginLoading) {
-    return <div className="p-4 text-sm text-muted-foreground">{t("plugins.loadingDetails")}</div>;
+    return <div className="p-4 text-sm text-muted-foreground">Loading plugin details...</div>;
   }
 
   if (!plugin) {
@@ -142,9 +142,11 @@ export function PluginSettings() {
       : plugin.status === "error"
         ? "destructive"
         : "secondary";
-  const pluginDescription = plugin.manifestJson.description || t("plugins.noDescription");
+  const pluginDescription = plugin.manifestJson.description || "No description provided.";
   const pluginCapabilities = plugin.manifestJson.capabilities ?? [];
   const environmentDrivers = plugin.manifestJson.environmentDrivers ?? [];
+  const localFolderDeclarations = plugin.manifestJson.localFolders ?? [];
+  const hasLocalFolders = localFolderDeclarations.length > 0;
   const environmentDriverNames = environmentDrivers
     .map((driver) => driver.displayName?.trim() || driver.driverKey)
     .filter((name, index, values) => values.indexOf(name) === index);
@@ -174,8 +176,8 @@ export function PluginSettings() {
         <PageTabBar
           align="start"
           items={[
-            { value: "configuration", label: t("plugins.configuration") },
-            { value: "status", label: t("common.status") },
+            { value: "configuration", label: "Configuration" },
+            { value: "status", label: "Status" },
           ]}
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as "configuration" | "status")}
@@ -184,19 +186,19 @@ export function PluginSettings() {
         <TabsContent value="configuration" className="space-y-6">
           <div className="space-y-8">
             <section className="space-y-5">
-              <h2 className="text-base font-semibold">{t("plugins.about")}</h2>
+              <h2 className="text-base font-semibold">About</h2>
               <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.8fr)]">
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-muted-foreground">{t("common.description")}</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
                   <p className="text-sm leading-6 text-foreground/90">{pluginDescription}</p>
                 </div>
                 <div className="space-y-4 text-sm">
                   <div className="space-y-1.5">
-                    <h3 className="font-medium text-muted-foreground">{t("plugins.author")}</h3>
+                    <h3 className="font-medium text-muted-foreground">Author</h3>
                     <p className="text-foreground">{plugin.manifestJson.author}</p>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-medium text-muted-foreground">{t("plugins.categories")}</h3>
+                    <h3 className="font-medium text-muted-foreground">Categories</h3>
                     <div className="flex flex-wrap gap-2">
                       {plugin.categories.length > 0 ? (
                         plugin.categories.map((category) => (
@@ -205,7 +207,7 @@ export function PluginSettings() {
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-foreground">{t("common.none")}</span>
+                        <span className="text-foreground">None</span>
                       )}
                     </div>
                   </div>
@@ -217,8 +219,15 @@ export function PluginSettings() {
 
             <section className="space-y-4">
               <div className="space-y-1">
-                <h2 className="text-base font-semibold">{t("common.settings")}</h2>
+                <h2 className="text-base font-semibold">Settings</h2>
               </div>
+              {hasLocalFolders ? (
+                <PluginLocalFoldersSettings
+                  pluginId={pluginId!}
+                  companyId={selectedCompanyId}
+                  declarations={localFolderDeclarations}
+                />
+              ) : null}
               {hasCustomSettingsPage ? (
                 <div className="space-y-3">
                   {pluginSlots.map((slot) => (
@@ -244,21 +253,22 @@ export function PluginSettings() {
                 />
               ) : environmentDrivers.length > 0 ? (
                 <div className="rounded-md border border-border/60 bg-muted/20 px-4 py-3 text-sm">
-                  <p className="font-medium text-foreground">{t("plugins.configureFromEnvironments")}</p>
+                  <p className="font-medium text-foreground">Configure this plugin from Company Environments.</p>
                   <p className="mt-1 text-muted-foreground">
-                    {driverLabel ? driverLabel : t("plugins.thisPlugin")} {t("plugins.registersEnvironmentSettings")}
+                    {driverLabel || "This plugin"} registers environment runtime settings there so credentials stay
+                    company-scoped instead of instance-global.
                   </p>
                   <div className="mt-3">
                     <Link to="/company/settings/environments">
-                      <Button variant="outline" size="sm">{t("plugins.openCompanyEnvironments")}</Button>
+                      <Button variant="outline" size="sm">Open Company Environments</Button>
                     </Link>
                   </div>
                 </div>
-              ) : (
+              ) : !hasLocalFolders ? (
                 <p className="text-sm text-muted-foreground">
-                  {t("plugins.noSettingsRequired")}
+                  This plugin does not require any settings.
                 </p>
-              )}
+              ) : null}
             </section>
           </div>
         </TabsContent>
@@ -270,10 +280,10 @@ export function PluginSettings() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-1.5">
                     <Cpu className="h-4 w-4" />
-                    {t("plugins.runtimeDashboard")}
+                    Runtime Dashboard
                   </CardTitle>
                   <CardDescription>
-                    {t("plugins.runtimeDashboardDesc")}
+                    Worker process, scheduled jobs, and webhook deliveries
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -282,26 +292,26 @@ export function PluginSettings() {
                       <div>
                         <h3 className="text-sm font-medium mb-3 flex items-center gap-1.5">
                           <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
-                          {t("plugins.workerProcess")}
+                          Worker Process
                         </h3>
                         {dashboardData.worker ? (
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">{t("common.status")}</span>
+                              <span className="text-muted-foreground">Status</span>
                               <Badge variant={dashboardData.worker.status === "running" ? "default" : "secondary"}>
                                 {dashboardData.worker.status}
                               </Badge>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">{t("plugins.pid")}</span>
+                              <span className="text-muted-foreground">PID</span>
                               <span className="font-mono text-xs">{dashboardData.worker.pid ?? "—"}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">{t("plugins.uptime")}</span>
+                              <span className="text-muted-foreground">Uptime</span>
                               <span className="text-xs">{formatUptime(dashboardData.worker.uptime)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">{t("plugins.pendingRpcs")}</span>
+                              <span className="text-muted-foreground">Pending RPCs</span>
                               <span className="text-xs">{dashboardData.worker.pendingRequests}</span>
                             </div>
                             {dashboardData.worker.totalCrashes > 0 && (
@@ -309,7 +319,7 @@ export function PluginSettings() {
                                 <div className="flex justify-between col-span-2">
                                   <span className="text-muted-foreground flex items-center gap-1">
                                     <AlertTriangle className="h-3 w-3 text-amber-500" />
-                                    {t("plugins.crashes")}
+                                    Crashes
                                   </span>
                                   <span className="text-xs">
                                     {dashboardData.worker.consecutiveCrashes} consecutive / {dashboardData.worker.totalCrashes} total
@@ -317,7 +327,7 @@ export function PluginSettings() {
                                 </div>
                                 {dashboardData.worker.lastCrashAt && (
                                   <div className="flex justify-between col-span-2">
-                                    <span className="text-muted-foreground">{t("plugins.lastCrash")}</span>
+                                    <span className="text-muted-foreground">Last Crash</span>
                                     <span className="text-xs">{formatTimestamp(dashboardData.worker.lastCrashAt)}</span>
                                   </div>
                                 )}
@@ -325,7 +335,7 @@ export function PluginSettings() {
                             )}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">{t("plugins.noWorkerProcess")}</p>
+                          <p className="text-sm text-muted-foreground italic">No worker process registered.</p>
                         )}
                       </div>
 
@@ -334,7 +344,7 @@ export function PluginSettings() {
                       <div>
                         <h3 className="text-sm font-medium mb-3 flex items-center gap-1.5">
                           <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-                          {t("plugins.recentJobRuns")}
+                          Recent Job Runs
                         </h3>
                         {dashboardData.recentJobRuns.length > 0 ? (
                           <div className="space-y-2">
@@ -360,7 +370,7 @@ export function PluginSettings() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">{t("plugins.noJobRuns")}</p>
+                          <p className="text-sm text-muted-foreground italic">No job runs recorded yet.</p>
                         )}
                       </div>
 
@@ -369,7 +379,7 @@ export function PluginSettings() {
                       <div>
                         <h3 className="text-sm font-medium mb-3 flex items-center gap-1.5">
                           <Webhook className="h-3.5 w-3.5 text-muted-foreground" />
-                          {t("plugins.recentWebhookDeliveries")}
+                          Recent Webhook Deliveries
                         </h3>
                         {dashboardData.recentWebhookDeliveries.length > 0 ? (
                           <div className="space-y-2">
@@ -392,18 +402,18 @@ export function PluginSettings() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground italic">{t("plugins.noWebhookDeliveries")}</p>
+                          <p className="text-sm text-muted-foreground italic">No webhook deliveries recorded yet.</p>
                         )}
                       </div>
 
                       <div className="flex items-center gap-1.5 border-t border-border/50 pt-2 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {t("plugins.lastChecked")}: {new Date(dashboardData.checkedAt).toLocaleTimeString()}
+                        Last checked: {new Date(dashboardData.checkedAt).toLocaleTimeString()}
                       </div>
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      {t("plugins.runtimeDiagnosticsUnavailable")}
+                      Runtime diagnostics are unavailable right now.
                     </p>
                   )}
                 </CardContent>
@@ -414,9 +424,9 @@ export function PluginSettings() {
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-1.5">
                       <ActivitySquare className="h-4 w-4" />
-                      {t("plugins.recentLogs")}
+                      Recent Logs
                     </CardTitle>
-                    <CardDescription>{t("plugins.lastNLogEntries", { count: recentLogs.length })}</CardDescription>
+                    <CardDescription>Last {recentLogs.length} log entries</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="max-h-64 space-y-1 overflow-y-auto font-mono text-xs">
@@ -449,16 +459,16 @@ export function PluginSettings() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-1.5">
                     <ActivitySquare className="h-4 w-4" />
-                    {t("plugins.healthStatus")}
+                    Health Status
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {healthLoading ? (
-                    <p className="text-sm text-muted-foreground">{t("plugins.checkingHealth")}</p>
+                    <p className="text-sm text-muted-foreground">Checking health...</p>
                   ) : healthData ? (
                     <div className="space-y-4 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">{t("plugins.overall")}</span>
+                        <span className="text-muted-foreground">Overall</span>
                         <Badge variant={healthData.healthy ? "default" : "destructive"}>
                           {healthData.status}
                         </Badge>
@@ -490,10 +500,10 @@ export function PluginSettings() {
                   ) : (
                     <div className="space-y-3 text-sm text-muted-foreground">
                       <div className="flex items-center justify-between">
-                        <span>{t("plugins.lifecycle")}</span>
+                        <span>Lifecycle</span>
                         <Badge variant={statusVariant}>{displayStatus}</Badge>
                       </div>
-                      <p>{t("plugins.healthChecksWhenReady")}</p>
+                      <p>Health checks run once the plugin is ready.</p>
                       {plugin.lastError ? (
                         <div className="break-words rounded border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">
                           {plugin.lastError}
@@ -506,25 +516,25 @@ export function PluginSettings() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">{t("plugins.details")}</CardTitle>
+                  <CardTitle className="text-base">Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-muted-foreground">
                   <div className="flex justify-between gap-3">
-                    <span>{t("plugins.pluginId")}</span>
+                    <span>Plugin ID</span>
                     <span className="font-mono text-xs text-right">{plugin.id}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>{t("plugins.pluginKey")}</span>
+                    <span>Plugin Key</span>
                     <span className="font-mono text-xs text-right">{plugin.pluginKey}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>{t("plugins.npmPackage")}</span>
+                    <span>NPM Package</span>
                     <span className="max-w-[170px] truncate text-right text-xs" title={plugin.packageName}>
                       {plugin.packageName}
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>{t("common.version")}</span>
+                    <span>Version</span>
                     <span className="text-right text-foreground">v{plugin.manifestJson.version ?? plugin.version}</span>
                   </div>
                 </CardContent>
@@ -534,7 +544,7 @@ export function PluginSettings() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-1.5">
                     <ShieldAlert className="h-4 w-4" />
-                    {t("plugins.permissions")}
+                    Permissions
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -547,7 +557,7 @@ export function PluginSettings() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-muted-foreground italic">{t("plugins.noSpecialPermissions")}</p>
+                    <p className="text-sm text-muted-foreground italic">No special permissions requested.</p>
                   )}
                 </CardContent>
               </Card>
@@ -556,6 +566,350 @@ export function PluginSettings() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PluginLocalFoldersSettings — host-managed company-scoped folders
+// ---------------------------------------------------------------------------
+
+interface PluginLocalFoldersSettingsProps {
+  pluginId: string;
+  companyId: string | null;
+  declarations: PluginLocalFolderDeclaration[];
+}
+
+function PluginLocalFoldersSettings({ pluginId, companyId, declarations }: PluginLocalFoldersSettingsProps) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: companyId
+      ? queryKeys.plugins.localFolders(pluginId, companyId)
+      : ["plugins", pluginId, "companies", "none", "local-folders"],
+    queryFn: () => pluginsApi.listLocalFolders(pluginId, companyId!),
+    enabled: !!companyId,
+  });
+
+  const statusByKey = new Map((data?.folders ?? []).map((folder) => [folder.folderKey, folder]));
+
+  if (!companyId) {
+    return (
+      <div className="rounded-md border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+        Select a company to configure this plugin's local folders.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-sm font-medium">Local folders</h3>
+      </div>
+      {error ? (
+        <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {(error as Error).message || "Failed to load local folder settings."}
+        </div>
+      ) : null}
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading local folders...
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {declarations.map((declaration) => (
+            <PluginLocalFolderRow
+              key={declaration.folderKey}
+              pluginId={pluginId}
+              companyId={companyId}
+              declaration={declaration}
+              status={statusByKey.get(declaration.folderKey)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface PluginLocalFolderRowProps {
+  pluginId: string;
+  companyId: string;
+  declaration: PluginLocalFolderDeclaration;
+  status?: PluginLocalFolderStatus;
+}
+
+function PluginLocalFolderRow({ pluginId, companyId, declaration, status }: PluginLocalFolderRowProps) {
+  const queryClient = useQueryClient();
+  const serverPath = status?.path ?? "";
+  const [pathValue, setPathValue] = useState(serverPath);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    setPathValue(serverPath);
+    setMessage(null);
+  }, [serverPath, declaration.folderKey]);
+
+  const saveMutation = useMutation({
+    mutationFn: (path: string) =>
+      pluginsApi.configureLocalFolder(pluginId, companyId, declaration.folderKey, {
+        path,
+        access: declaration.access,
+        requiredDirectories: declaration.requiredDirectories,
+        requiredFiles: declaration.requiredFiles,
+      }),
+    onSuccess: (nextStatus) => {
+      setMessage({
+        type: nextStatus.healthy ? "success" : "error",
+        text: nextStatus.healthy
+          ? "Local folder saved."
+          : "Local folder saved, but validation still needs attention.",
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.plugins.localFolders(pluginId, companyId) });
+    },
+    onError: (err: Error) => {
+      setMessage({ type: "error", text: err.message || "Failed to save local folder." });
+    },
+  });
+
+  const trimmedPath = pathValue.trim();
+  const isDirty = trimmedPath !== serverPath;
+  const access = status?.access ?? declaration.access ?? "readWrite";
+
+  const handleSave = useCallback(() => {
+    if (!trimmedPath) {
+      setMessage({ type: "error", text: "Local folder path is required." });
+      return;
+    }
+    if (!isLikelyAbsolutePath(trimmedPath)) {
+      setMessage({ type: "error", text: "Local folder must be a full absolute path." });
+      return;
+    }
+    setMessage(null);
+    saveMutation.mutate(trimmedPath);
+  }, [saveMutation, trimmedPath]);
+
+  return (
+    <div className="space-y-4 rounded-md border border-border/70 bg-background px-4 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-sm font-medium">{declaration.displayName}</h4>
+            <Badge variant="outline" className="font-mono text-[10px]">
+              {declaration.folderKey}
+            </Badge>
+            <Badge variant={status?.healthy ? "default" : "secondary"}>
+              {status?.healthy ? "Healthy" : "Needs attention"}
+            </Badge>
+          </div>
+          {declaration.description ? (
+            <p className="max-w-3xl text-sm leading-5 text-muted-foreground">
+              {declaration.description}
+            </p>
+          ) : null}
+        </div>
+        <Badge variant={access === "readWrite" ? "default" : "outline"}>
+          {access === "readWrite" ? "Read/write" : "Read only"}
+        </Badge>
+      </div>
+
+      <div className="grid gap-3 text-sm sm:grid-cols-3">
+        <FolderStatusMetric label="Configured" value={status?.configured ? "Yes" : "No"} ok={!!status?.configured} />
+        <FolderStatusMetric label="Readable" value={status?.readable ? "Yes" : "No"} ok={!!status?.readable} />
+        <FolderStatusMetric
+          label="Writable"
+          value={access === "read" ? "Not requested" : status?.writable ? "Yes" : "No"}
+          ok={access === "read" || !!status?.writable}
+        />
+      </div>
+
+      {status?.path ? (
+        <div className="space-y-1 text-sm">
+          <div className="text-xs font-medium text-muted-foreground">Configured path</div>
+          <div className="break-all rounded-md bg-muted/60 px-2 py-1.5 font-mono text-xs text-foreground">
+            {status.path}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground" htmlFor={`local-folder-${declaration.folderKey}`}>
+          Local folder path
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            id={`local-folder-${declaration.folderKey}`}
+            className="min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 py-1.5 font-mono text-sm outline-none focus:border-foreground/40 focus:ring-2 focus:ring-ring/20"
+            value={pathValue}
+            onChange={(event) => {
+              setPathValue(event.target.value);
+              setMessage(null);
+            }}
+            placeholder="/absolute/path/to/folder"
+          />
+          <ChoosePathButton className="h-8" />
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saveMutation.isPending || !isDirty}
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
+            Save
+          </Button>
+        </div>
+      </div>
+
+      <FolderRequirements status={status} declaration={declaration} />
+
+      {status?.problems?.length ? (
+        <div className="space-y-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div className="font-medium">Validation problems</div>
+          <ul className="space-y-1">
+            {status.problems.map((problem, index) => (
+              <li key={`${problem.code}:${problem.path ?? ""}:${index}`}>
+                {problem.message}
+                {problem.path ? <span className="font-mono"> {problem.path}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {message ? (
+        <div
+          className={`rounded-md border px-3 py-2 text-sm ${
+            message.type === "success"
+              ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-400"
+              : "border-destructive/20 bg-destructive/10 text-destructive"
+          }`}
+        >
+          {message.text}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function FolderStatusMetric({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="flex items-center justify-between rounded-md border border-border/60 px-2.5 py-2">
+      <span className="text-muted-foreground">{label}</span>
+      <Badge variant={ok ? "default" : "secondary"}>{value}</Badge>
+    </div>
+  );
+}
+
+function FolderRequirements({
+  status,
+  declaration,
+}: {
+  status?: PluginLocalFolderStatus;
+  declaration: PluginLocalFolderDeclaration;
+}) {
+  const requiredDirectories = status?.requiredDirectories ?? declaration.requiredDirectories ?? [];
+  const requiredFiles = status?.requiredFiles ?? declaration.requiredFiles ?? [];
+  const missingDirectories = status?.missingDirectories ?? requiredDirectories;
+  const missingFiles = status?.missingFiles ?? requiredFiles;
+  const rootNotInspected = isRootNotInspected(status);
+
+  if (requiredDirectories.length === 0 && requiredFiles.length === 0) return null;
+
+  return (
+    <div className="grid gap-3 text-sm md:grid-cols-2">
+      <RequirementList
+        title="Required directories"
+        items={requiredDirectories}
+        missingItems={missingDirectories}
+        missingLabel="Missing directories"
+        inspectionUnavailable={rootNotInspected}
+      />
+      <RequirementList
+        title="Required files"
+        items={requiredFiles}
+        missingItems={missingFiles}
+        missingLabel="Missing files"
+        inspectionUnavailable={rootNotInspected}
+      />
+    </div>
+  );
+}
+
+function isRootNotInspected(status?: PluginLocalFolderStatus) {
+  if (!status?.configured || status.readable) return false;
+  return status.problems.some((problem) =>
+    problem.code === "missing" || problem.code === "not_readable" || problem.code === "not_directory"
+  );
+}
+
+function RequirementList({
+  title,
+  items,
+  missingItems,
+  missingLabel,
+  inspectionUnavailable,
+}: {
+  title: string;
+  items: string[];
+  missingItems: string[];
+  missingLabel: string;
+  inspectionUnavailable?: boolean;
+}) {
+  return (
+    <div className="space-y-2 rounded-md border border-border/60 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-muted-foreground">{title}</span>
+        {inspectionUnavailable ? (
+          <Badge variant="secondary" className="text-[10px]">
+            Not inspected
+          </Badge>
+        ) : missingItems.length > 0 ? (
+          <Badge variant="destructive" className="text-[10px]">
+            {missingItems.length} missing
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px]">Present</Badge>
+        )}
+      </div>
+      {items.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {items.map((item) => {
+            const missing = missingItems.includes(item);
+            return (
+              <span
+                key={item}
+                className={`rounded border px-1.5 py-0.5 font-mono text-[11px] ${
+                  inspectionUnavailable
+                    ? "border-amber-300/60 bg-amber-50 text-amber-700 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-300"
+                    : missing
+                    ? "border-destructive/30 bg-destructive/10 text-destructive"
+                    : "border-border bg-muted/50 text-foreground/80"
+                }`}
+              >
+                {item}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">None declared.</p>
+      )}
+      {inspectionUnavailable ? (
+        <p className="text-xs text-amber-700 dark:text-amber-300">Configured root was not inspected.</p>
+      ) : missingItems.length > 0 ? (
+        <p className="text-xs text-destructive">{missingLabel}: {missingItems.join(", ")}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function isLikelyAbsolutePath(pathValue: string) {
+  return (
+    pathValue.startsWith("/") ||
+    /^[A-Za-z]:[\\/]/.test(pathValue) ||
+    pathValue.startsWith("\\\\")
   );
 }
 
@@ -582,7 +936,6 @@ interface PluginConfigFormProps {
  * re-renders on field changes, not the entire page.
  */
 function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginStatus, supportsConfigTest }: PluginConfigFormProps) {
-  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   // Form values: start with saved values, fall back to schema defaults
@@ -620,14 +973,14 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
     mutationFn: (configJson: Record<string, unknown>) =>
       pluginsApi.saveConfig(pluginId, configJson),
     onSuccess: () => {
-      setSaveMessage({ type: "success", text: t("plugins.configSaved") });
+      setSaveMessage({ type: "success", text: "Configuration saved." });
       setTestResult(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.plugins.config(pluginId) });
       // Clear success message after 3s
       setTimeout(() => setSaveMessage(null), 3000);
     },
     onError: (err: Error) => {
-      setSaveMessage({ type: "error", text: err.message || t("plugins.failedToSaveConfig") });
+      setSaveMessage({ type: "error", text: err.message || "Failed to save configuration." });
     },
   });
 
@@ -637,13 +990,13 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
       pluginsApi.testConfig(pluginId, configJson),
     onSuccess: (result) => {
       if (result.valid) {
-        setTestResult({ type: "success", text: t("plugins.configTestPassed") });
+        setTestResult({ type: "success", text: "Configuration test passed." });
       } else {
-        setTestResult({ type: "error", text: result.message || t("plugins.configTestFailed") });
+        setTestResult({ type: "error", text: result.message || "Configuration test failed." });
       }
     },
     onError: (err: Error) => {
-      setTestResult({ type: "error", text: err.message || t("plugins.configTestFailed") });
+      setTestResult({ type: "error", text: err.message || "Configuration test failed." });
     },
   });
 
@@ -681,7 +1034,7 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
         <Loader2 className="h-4 w-4 animate-spin" />
-        {t("plugins.loadingConfiguration")}
+        Loading configuration...
       </div>
     );
   }
@@ -731,10 +1084,10 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
           {saveMutation.isPending ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {t("plugins.saving")}...
+              Saving...
             </>
           ) : (
-            t("plugins.saveConfiguration")
+            "Save Configuration"
           )}
         </Button>
         {pluginStatus === "ready" && supportsConfigTest && (
@@ -747,10 +1100,10 @@ function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginSt
             {testMutation.isPending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                {t("plugins.testing")}...
+                Testing...
               </>
             ) : (
-              t("plugins.testConfiguration")
+              "Test Configuration"
             )}
           </Button>
         )}
